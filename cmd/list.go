@@ -16,13 +16,17 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
+	"log"
+	"os"
+	"sort"
 
 	"github.com/spf13/cobra"
-
-	"log"
-	"os/exec"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var result map[string]interface{}
@@ -38,16 +42,32 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		mycmd := exec.Command("oc", "get", "packagemanifest", "-n", "openshift-marketplace", "-o", "json")
-		out, err := mycmd.Output()
-		json.Unmarshal([]byte(out), &result)
-		fmt.Print(result["items"])
-		// for key, value := range result["items"] {
-		//	fmt.Printf("key: %s value: %s\n", key, value)
-		//	// fmt.Printf("%s\n", entry["metadata"]["name"])
-		//}
+		var operators []string
+		kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
-			log.Fatal(err)
+			log.Panicln("failed to create K8s config")
+		}
+		client, err := dynamic.NewForConfig(config)
+		if err != nil {
+			log.Panicln("Failed to create K8s clientset")
+		}
+		packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
+		list, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			panic(err)
+		}
+		for _, d := range list.Items {
+			// namespace, _, err := unstructured.NestedString(d.Object, "metadata", "namespace")
+			// if err != nil {
+			//	log.Printf("Error getting namespace %v", err)
+			//	continue
+			//}
+			operators = append(operators, d.GetName())
+		}
+		sort.Strings(operators)
+		for _, operator := range operators {
+			fmt.Println(operator)
 		}
 	},
 }
