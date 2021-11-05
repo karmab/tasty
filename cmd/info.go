@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -72,7 +73,7 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Printf("Error getting channel %v", err)
 		}
-		fmt.Println("Providing information for app", operator)
+		color.Cyan("Providing information for app %s", operator)
 		fmt.Println("source: ", source)
 		fmt.Println("channel: ", channel)
 		fmt.Println("target namespace: ", operator)
