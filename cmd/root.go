@@ -17,8 +17,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+
+	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 
 	"github.com/spf13/viper"
 )
@@ -51,7 +53,7 @@ func init() {
 
 	kubeconfig = os.Getenv("KUBECONFIG")
 	if kubeconfig == "" {
-		fmt.Println("KUBECONFIG env variable needs to be set")
+		color.Red("KUBECONFIG env variable needs to be set")
 		os.Exit(1)
 	}
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.tasty.yaml)")
