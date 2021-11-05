@@ -25,21 +25,24 @@ import (
 var installCmd = &cobra.Command{
 	Use:   "install [operator]",
 	Short: "Install operator",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long: `Install operator
+	Examples needed here`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		operator := args[0]
+		outputdir, _ := cmd.Flags().GetString("output")
 		fmt.Println("install called with " + operator)
+		fmt.Println("output set to " + outputdir)
+		namespace, source, channel := get_operator(operator)
+		fmt.Println("namespace is" + namespace)
+		fmt.Println("source is" + source)
+		fmt.Println("channel is" + channel)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(installCmd)
+	installCmd.Flags().StringP("output", "o", "", "Output directory")
 
 	// Here you will define your flags and configuration settings.
 

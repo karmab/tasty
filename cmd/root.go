@@ -16,14 +16,51 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/spf13/viper"
 )
+
+func get_operator(operator string) (namespace string, source string, channel string) {
+	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		log.Panicln("failed to create K8s config")
+	}
+	client, err := dynamic.NewForConfig(config)
+	if err != nil {
+		log.Panicln("Failed to create K8s clientset")
+	}
+	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
+	operatorinfo, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
+	if err != nil {
+		panic(err)
+	}
+	namespace, _, err = unstructured.NestedString(operatorinfo.Object, "metadata", "namespace")
+	if err != nil {
+		log.Printf("Error getting namespace %v", err)
+	}
+	source, _, err = unstructured.NestedString(operatorinfo.Object, "status", "catalogSource")
+	if err != nil {
+		log.Printf("Error getting source %v", err)
+	}
+	channel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
+	if err != nil {
+		log.Printf("Error getting channel %v", err)
+	}
+	return namespace, source, channel
+}
 
 var cfgFile string
 var kubeconfig string

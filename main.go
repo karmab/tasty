@@ -15,7 +15,9 @@ limitations under the License.
 */
 package main
 
-import "tasty/cmd"
+import (
+	"tasty/cmd"
+)
 
 func main() {
 	cmd.Execute()
