@@ -23,6 +23,7 @@ import (
 	"sort"
 
 	"github.com/spf13/cobra"
+	"github.com/syohex/go-texttable"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -66,9 +67,12 @@ to quickly create a Cobra application.`,
 			operators = append(operators, d.GetName())
 		}
 		sort.Strings(operators)
+		operatortable := &texttable.TextTable{}
+		operatortable.SetHeader("Name")
 		for _, operator := range operators {
-			fmt.Println(operator)
+			operatortable.AddRow(operator)
 		}
+		fmt.Println(operatortable.Draw())
 	},
 }
 

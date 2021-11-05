@@ -40,7 +40,12 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		operator := "performance-addon-operator"
+		var operator string
+		if len(args) != 1 {
+			log.Printf("Usage: tasty info OPERATOR_NAME")
+		} else {
+			operator = args[0]
+		}
 		kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
