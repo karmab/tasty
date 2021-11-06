@@ -32,7 +32,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func get_operator(operator string) (namespace string, source string, channel string) {
+func get_operator(operator string) (namespace string, source string, defaultchannel string, csv string, description string, target_namespace string, crd string) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
@@ -55,11 +55,42 @@ func get_operator(operator string) (namespace string, source string, channel str
 	if err != nil {
 		log.Printf("Error getting source %v", err)
 	}
-	channel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
+	defaultchannel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
 	if err != nil {
 		log.Printf("Error getting channel %v", err)
 	}
-	return namespace, source, channel
+	channels, _, err := unstructured.NestedSlice(operatorinfo.Object, "status", "channels")
+	if err != nil {
+		log.Printf("Error getting channel %v", err)
+	}
+	for _, channel := range channels {
+		channelmap, _ := channel.(map[string]interface{})
+		channelname := channelmap["name"]
+		if channelname == defaultchannel {
+			csv = channelmap["currentCSV"].(string)
+			csvdescmap, _ := channelmap["currentCSVDesc"].(map[string]interface{})
+			description = csvdescmap["description"].(string)
+			installmodes := csvdescmap["installModes"].([]interface{})
+			for _, mode := range installmodes {
+				modemap, _ := mode.(map[string]interface{})
+				if modemap["type"] == "OwnNamespace" && modemap["supported"] == false {
+					target_namespace = "openshift-operators"
+				}
+			}
+			csvdescannotations := csvdescmap["annotations"].(map[string]interface{})
+			if suggested_namespace, ok := csvdescannotations["operatorframework.io/suggested-namespace"].(string); ok {
+				target_namespace = suggested_namespace
+			}
+			if customresourcedefinitionsmap, ok := csvdescmap["customresourcedefinitions"]; ok {
+				customresourcedefinitions, _ := customresourcedefinitionsmap.(map[string]interface{})
+				ownedlist := customresourcedefinitions["owned"].([]interface{})
+				owned := ownedlist[0].(map[string]interface{})
+				crd = owned["name"].(string)
+			}
+		}
+	}
+
+	return namespace, source, defaultchannel, csv, description, target_namespace, crd
 }
 
 var cfgFile string

@@ -33,10 +33,13 @@ var installCmd = &cobra.Command{
 		outputdir, _ := cmd.Flags().GetString("output")
 		fmt.Println("install called with " + operator)
 		fmt.Println("output set to " + outputdir)
-		namespace, source, channel := get_operator(operator)
-		fmt.Println("namespace is" + namespace)
-		fmt.Println("source is" + source)
-		fmt.Println("channel is" + channel)
+		namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
+		fmt.Println("namespace: " + namespace)
+		fmt.Println("source: " + source)
+		fmt.Println("defaultchannel: " + defaultchannel)
+		fmt.Println("target_namespace: " + target_namespace)
+		fmt.Println("csv: " + csv)
+		fmt.Println("crd: " + crd)
 	},
 }
 
