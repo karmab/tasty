@@ -17,9 +17,22 @@ package cmd
 
 import (
 	"fmt"
+	"html/template"
+	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 )
+
+type Operator struct {
+	Name            string
+	Namespace       string
+	Source          string
+	DefaultChannel  string
+	Csv             string
+	TargetNamespace string
+	Crd             string
+}
 
 // installCmd represents the install command
 var installCmd = &cobra.Command{
@@ -31,15 +44,63 @@ var installCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		operator := args[0]
 		outputdir, _ := cmd.Flags().GetString("output")
-		fmt.Println("install called with " + operator)
-		fmt.Println("output set to " + outputdir)
 		namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
-		fmt.Println("namespace: " + namespace)
-		fmt.Println("source: " + source)
-		fmt.Println("defaultchannel: " + defaultchannel)
-		fmt.Println("target_namespace: " + target_namespace)
-		fmt.Println("csv: " + csv)
-		fmt.Println("crd: " + crd)
+		if outputdir != "" {
+			if _, err1 := os.Stat(outputdir); os.IsNotExist(err1) {
+				err2 := os.Mkdir(outputdir, 0755)
+				if err2 != nil {
+					log.Fatal(err2)
+				}
+			}
+			templateStr := `{{ if eq .Namespace "openshift-operators" }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    openshift.io/cluster-monitoring: "true"
+  name: {{ .Namespace }}
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .Name }}-operatorgroup
+  namespace: {{ .Namespace }}
+spec:
+  targetNamespaces:
+  - {{ .Namespace }}
+---
+{{ end }}
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Name }}-subscription
+  namespace: {{ .Namespace }}
+spec:
+  channel: "{{ .DefaultChannel }}"
+  name: {{ .Name }}
+  source: {{ .Source }}
+  sourceNamespace: openshift-marketplace
+`
+			t := template.New("Template")
+			tpl, err := t.Parse(templateStr)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			operatordata := Operator{
+				Name:            operator,
+				Namespace:       namespace,
+				Source:          source,
+				DefaultChannel:  defaultchannel,
+				Csv:             csv,
+				TargetNamespace: target_namespace,
+				Crd:             crd,
+			}
+			err = tpl.Execute(os.Stdout, operatordata)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println("Copied artifacts to " + outputdir)
+		}
 	},
 }
 
