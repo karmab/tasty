@@ -16,7 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"html/template"
 	"log"
 	"os"
@@ -43,15 +42,9 @@ var installCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		operator := args[0]
-		outputdir, _ := cmd.Flags().GetString("output")
+		stdout, _ := cmd.Flags().GetBool("stdout")
 		namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
-		if outputdir != "" {
-			if _, err1 := os.Stat(outputdir); os.IsNotExist(err1) {
-				err2 := os.Mkdir(outputdir, 0755)
-				if err2 != nil {
-					log.Fatal(err2)
-				}
-			}
+		if stdout == true {
 			templateStr := `{{ if eq .Namespace "openshift-operators" }}
 apiVersion: v1
 kind: Namespace
@@ -99,22 +92,11 @@ spec:
 			if err != nil {
 				panic(err)
 			}
-			fmt.Println("Copied artifacts to " + outputdir)
 		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(installCmd)
-	installCmd.Flags().StringP("output", "o", "", "Output directory")
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// installCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// installCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	installCmd.Flags().BoolP("stdout", "s", false, "Print to stdout")
 }
