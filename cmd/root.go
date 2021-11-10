@@ -80,9 +80,14 @@ func get_operator(operator string) (namespace string, source string, defaultchan
 			}
 			if customresourcedefinitionsmap, ok := csvdescmap["customresourcedefinitions"]; ok {
 				customresourcedefinitions, _ := customresourcedefinitionsmap.(map[string]interface{})
-				ownedlist := customresourcedefinitions["owned"].([]interface{})
-				owned := ownedlist[0].(map[string]interface{})
-				crd = owned["name"].(string)
+				ownedlistmap := customresourcedefinitions["owned"]
+				if ownedlistmap == nil {
+					crd = ""
+				} else {
+					ownedlist := ownedlistmap.([]interface{})
+					owned := ownedlist[0].(map[string]interface{})
+					crd = owned["name"].(string)
+				}
 			}
 		}
 	}
