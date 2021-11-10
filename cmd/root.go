@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/fatih/color"
@@ -29,37 +28,38 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func get_client() (client dynamic.Interface) {
+	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	check(err)
+	client, err = dynamic.NewForConfig(config)
+	check(err)
+	return client
+}
+
 func get_operator(operator string) (namespace string, source string, defaultchannel string, csv string, description string, target_namespace string, crd string) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		log.Panicln("failed to create K8s config")
-	}
+	check(err)
 	client, err := dynamic.NewForConfig(config)
-	if err != nil {
-		log.Panicln("Failed to create K8s clientset")
-	}
+	check(err)
 	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 	operatorinfo, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
-	if err != nil {
-		panic(err)
-	}
+	check(err)
 	namespace, _, err = unstructured.NestedString(operatorinfo.Object, "metadata", "namespace")
-	if err != nil {
-		log.Printf("Error getting namespace %v", err)
-	}
+	check(err)
 	source, _, err = unstructured.NestedString(operatorinfo.Object, "status", "catalogSource")
-	if err != nil {
-		log.Printf("Error getting source %v", err)
-	}
+	check(err)
 	defaultchannel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
-	if err != nil {
-		log.Printf("Error getting channel %v", err)
-	}
+	check(err)
 	channels, _, err := unstructured.NestedSlice(operatorinfo.Object, "status", "channels")
-	if err != nil {
-		log.Printf("Error getting channel %v", err)
-	}
+	check(err)
 	for _, channel := range channels {
 		channelmap, _ := channel.(map[string]interface{})
 		channelname := channelmap["name"]
@@ -89,6 +89,46 @@ func get_operator(operator string) (namespace string, source string, defaultchan
 
 	return namespace, source, defaultchannel, csv, description, target_namespace, crd
 }
+
+type Operator struct {
+	Name            string
+	Namespace       string
+	Source          string
+	DefaultChannel  string
+	Csv             string
+	TargetNamespace string
+	Crd             string
+}
+
+var operatordata = `{{ if ne .Namespace "openshift-operators" }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    openshift.io/cluster-monitoring: "true"
+  name: {{ .Namespace }}
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: {{ .Name }}-operatorgroup
+  namespace: {{ .Namespace }}
+spec:
+  targetNamespaces:
+  - {{ .Namespace }}
+---
+{{ end }}
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Name }}-subscription
+  namespace: {{ .Namespace }}
+spec:
+  channel: "{{ .DefaultChannel }}"
+  name: {{ .Name }}
+  source: {{ .Source }}
+  sourceNamespace: openshift-marketplace
+`
 
 var cfgFile string
 var kubeconfig string

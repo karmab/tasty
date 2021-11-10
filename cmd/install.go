@@ -16,22 +16,14 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"fmt"
 	"html/template"
-	"log"
 	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 )
-
-type Operator struct {
-	Name            string
-	Namespace       string
-	Source          string
-	DefaultChannel  string
-	Csv             string
-	TargetNamespace string
-	Crd             string
-}
 
 // installCmd represents the install command
 var installCmd = &cobra.Command{
@@ -44,54 +36,34 @@ var installCmd = &cobra.Command{
 		operator := args[0]
 		stdout, _ := cmd.Flags().GetBool("stdout")
 		namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
+		t := template.New("Template")
+		tpl, err := t.Parse(operatordata)
+		check(err)
+		operatordata := Operator{
+			Name:            operator,
+			Namespace:       namespace,
+			Source:          source,
+			DefaultChannel:  defaultchannel,
+			Csv:             csv,
+			TargetNamespace: target_namespace,
+			Crd:             crd,
+		}
 		if stdout == true {
-			templateStr := `{{ if eq .Namespace "openshift-operators" }}
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    openshift.io/cluster-monitoring: "true"
-  name: {{ .Namespace }}
----
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: {{ .Name }}-operatorgroup
-  namespace: {{ .Namespace }}
-spec:
-  targetNamespaces:
-  - {{ .Namespace }}
----
-{{ end }}
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: {{ .Name }}-subscription
-  namespace: {{ .Namespace }}
-spec:
-  channel: "{{ .DefaultChannel }}"
-  name: {{ .Name }}
-  source: {{ .Source }}
-  sourceNamespace: openshift-marketplace
-`
-			t := template.New("Template")
-			tpl, err := t.Parse(templateStr)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			operatordata := Operator{
-				Name:            operator,
-				Namespace:       namespace,
-				Source:          source,
-				DefaultChannel:  defaultchannel,
-				Csv:             csv,
-				TargetNamespace: target_namespace,
-				Crd:             crd,
-			}
 			err = tpl.Execute(os.Stdout, operatordata)
-			if err != nil {
-				panic(err)
-			}
+			check(err)
+		} else {
+			buf := &bytes.Buffer{}
+			err = tpl.Execute(buf, operatordata)
+			check(err)
+			tmpfile, err := os.CreateTemp("", "tasty")
+			check(err)
+			_, err = tmpfile.Write(buf.Bytes())
+			check(err)
+			tmpfile.Close()
+			applyout, err := exec.Command("oc", "apply", "-f", tmpfile.Name()).Output()
+			check(err)
+			fmt.Println(string(applyout))
+			os.Remove(tmpfile.Name())
 		}
 	},
 }

@@ -18,7 +18,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"sort"
 
@@ -46,24 +45,13 @@ to quickly create a Cobra application.`,
 		var operators []string
 		kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-		if err != nil {
-			log.Panicln("failed to create K8s config")
-		}
+		check(err)
 		client, err := dynamic.NewForConfig(config)
-		if err != nil {
-			log.Panicln("Failed to create K8s clientset")
-		}
+		check(err)
 		packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 		list, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err)
-		}
+		check(err)
 		for _, d := range list.Items {
-			// namespace, _, err := unstructured.NestedString(d.Object, "metadata", "namespace")
-			// if err != nil {
-			//	log.Printf("Error getting namespace %v", err)
-			//	continue
-			//}
 			operators = append(operators, d.GetName())
 		}
 		sort.Strings(operators)

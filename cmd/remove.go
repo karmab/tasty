@@ -16,7 +16,11 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
+	"os"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 )
@@ -32,7 +36,32 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("remove called")
+		operator := args[0]
+		namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
+		t := template.New("Template")
+		tpl, err := t.Parse(operatordata)
+		check(err)
+		operatordata := Operator{
+			Name:            operator,
+			Namespace:       namespace,
+			Source:          source,
+			DefaultChannel:  defaultchannel,
+			Csv:             csv,
+			TargetNamespace: target_namespace,
+			Crd:             crd,
+		}
+		buf := &bytes.Buffer{}
+		err = tpl.Execute(buf, operatordata)
+		check(err)
+		tmpfile, err := os.CreateTemp("", "tasty")
+		check(err)
+		_, err = tmpfile.Write(buf.Bytes())
+		check(err)
+		tmpfile.Close()
+		applyout, err := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
+		check(err)
+		fmt.Println(string(applyout))
+		os.Remove(tmpfile.Name())
 	},
 }
 
