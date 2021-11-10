@@ -100,7 +100,7 @@ type Operator struct {
 	Crd             string
 }
 
-var operatordata = `{{ if ne .Namespace "openshift-operators" }}
+var operatordata = `{{ if and (ne .Namespace "openshift-operators") (ne .Namespace "openshift-marketplace") }}
 apiVersion: v1
 kind: Namespace
 metadata:

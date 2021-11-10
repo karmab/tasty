@@ -29,10 +29,9 @@ import (
 // installCmd represents the install command
 var installCmd = &cobra.Command{
 	Use:   "install [operator]",
-	Short: "Install operator",
-	Long: `Install operator
-	Examples needed here`,
-	Args: cobra.MinimumNArgs(1),
+	Short: "Install operators",
+	Long:  `Install operators`,
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, operator := range args {
 			color.Cyan("Installing operator %s", operator)

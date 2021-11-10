@@ -30,18 +30,13 @@ import (
 // removeCmd represents the remove command
 var removeCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "Remove operator",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Remove operators",
+	Long:  `Remove operators`,
 	Run: func(cmd *cobra.Command, args []string) {
 		yes, _ := cmd.Flags().GetBool("stdout")
 		if yes != true {
 			var confirmation string
-			color.Green("Are you sure ? [y/N]:")
+			color.Green("Are you sure? [y/N]:")
 			fmt.Scanln(&confirmation)
 			if strings.ToLower(confirmation) != "y" {
 				color.Red("Leaving..")
@@ -71,8 +66,8 @@ to quickly create a Cobra application.`,
 			_, err = tmpfile.Write(buf.Bytes())
 			check(err)
 			tmpfile.Close()
-			applyout, err := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
-			check(err)
+			applyout, _ := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
+			// check(err)
 			fmt.Println(string(applyout))
 			os.Remove(tmpfile.Name())
 		}
