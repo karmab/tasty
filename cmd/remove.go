@@ -21,7 +21,9 @@ import (
 	"html/template"
 	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -36,37 +38,50 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		operator := args[0]
-		namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
-		t := template.New("Template")
-		tpl, err := t.Parse(operatordata)
-		check(err)
-		operatordata := Operator{
-			Name:            operator,
-			Namespace:       namespace,
-			Source:          source,
-			DefaultChannel:  defaultchannel,
-			Csv:             csv,
-			TargetNamespace: target_namespace,
-			Crd:             crd,
+		yes, _ := cmd.Flags().GetBool("stdout")
+		if yes != true {
+			var confirmation string
+			color.Green("Are you sure ? [y/N]:")
+			fmt.Scanln(&confirmation)
+			if strings.ToLower(confirmation) != "y" {
+				color.Red("Leaving..")
+				os.Exit(0)
+			}
 		}
-		buf := &bytes.Buffer{}
-		err = tpl.Execute(buf, operatordata)
-		check(err)
-		tmpfile, err := os.CreateTemp("", "tasty")
-		check(err)
-		_, err = tmpfile.Write(buf.Bytes())
-		check(err)
-		tmpfile.Close()
-		applyout, err := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
-		check(err)
-		fmt.Println(string(applyout))
-		os.Remove(tmpfile.Name())
+		for _, operator := range args {
+			color.Cyan("Removing operator %s", operator)
+			namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
+			t := template.New("Template")
+			tpl, err := t.Parse(operatordata)
+			check(err)
+			operatordata := Operator{
+				Name:            operator,
+				Namespace:       namespace,
+				Source:          source,
+				DefaultChannel:  defaultchannel,
+				Csv:             csv,
+				TargetNamespace: target_namespace,
+				Crd:             crd,
+			}
+			buf := &bytes.Buffer{}
+			err = tpl.Execute(buf, operatordata)
+			check(err)
+			tmpfile, err := os.CreateTemp("", "tasty")
+			check(err)
+			_, err = tmpfile.Write(buf.Bytes())
+			check(err)
+			tmpfile.Close()
+			applyout, err := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
+			check(err)
+			fmt.Println(string(applyout))
+			os.Remove(tmpfile.Name())
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(removeCmd)
+	removeCmd.Flags().BoolP("yes", "y", false, "Confirm")
 
 	// Here you will define your flags and configuration settings.
 

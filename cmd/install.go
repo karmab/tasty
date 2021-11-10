@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -33,37 +34,39 @@ var installCmd = &cobra.Command{
 	Examples needed here`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		operator := args[0]
-		stdout, _ := cmd.Flags().GetBool("stdout")
-		namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
-		t := template.New("Template")
-		tpl, err := t.Parse(operatordata)
-		check(err)
-		operatordata := Operator{
-			Name:            operator,
-			Namespace:       namespace,
-			Source:          source,
-			DefaultChannel:  defaultchannel,
-			Csv:             csv,
-			TargetNamespace: target_namespace,
-			Crd:             crd,
-		}
-		if stdout == true {
-			err = tpl.Execute(os.Stdout, operatordata)
+		for _, operator := range args {
+			color.Cyan("Installing operator %s", operator)
+			stdout, _ := cmd.Flags().GetBool("stdout")
+			namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
+			t := template.New("Template")
+			tpl, err := t.Parse(operatordata)
 			check(err)
-		} else {
-			buf := &bytes.Buffer{}
-			err = tpl.Execute(buf, operatordata)
-			check(err)
-			tmpfile, err := os.CreateTemp("", "tasty")
-			check(err)
-			_, err = tmpfile.Write(buf.Bytes())
-			check(err)
-			tmpfile.Close()
-			applyout, err := exec.Command("oc", "apply", "-f", tmpfile.Name()).Output()
-			check(err)
-			fmt.Println(string(applyout))
-			os.Remove(tmpfile.Name())
+			operatordata := Operator{
+				Name:            operator,
+				Namespace:       namespace,
+				Source:          source,
+				DefaultChannel:  defaultchannel,
+				Csv:             csv,
+				TargetNamespace: target_namespace,
+				Crd:             crd,
+			}
+			if stdout == true {
+				err = tpl.Execute(os.Stdout, operatordata)
+				check(err)
+			} else {
+				buf := &bytes.Buffer{}
+				err = tpl.Execute(buf, operatordata)
+				check(err)
+				tmpfile, err := os.CreateTemp("", "tasty")
+				check(err)
+				_, err = tmpfile.Write(buf.Bytes())
+				check(err)
+				tmpfile.Close()
+				applyout, err := exec.Command("oc", "apply", "-f", tmpfile.Name()).Output()
+				check(err)
+				fmt.Println(string(applyout))
+				os.Remove(tmpfile.Name())
+			}
 		}
 	},
 }
