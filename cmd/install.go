@@ -38,7 +38,7 @@ var installCmd = &cobra.Command{
 			stdout, _ := cmd.Flags().GetBool("stdout")
 			wait, _ := cmd.Flags().GetBool("wait")
 			targetchannel, _ := cmd.Flags().GetString("channel")
-			source, defaultchannel, csv, _, target_namespace, channels, crd, crdversion := get_operator(operator)
+			source, defaultchannel, csv, _, target_namespace, channels, crd := get_operator(operator)
 			if targetchannel != "" {
 				if contains(channels, targetchannel) {
 					defaultchannel = targetchannel
@@ -74,7 +74,7 @@ var installCmd = &cobra.Command{
 				fmt.Println(string(applyout))
 				os.Remove(tmpfile.Name())
 				if wait == true {
-					wait_crd(crd, crdversion, 60)
+					wait_crd(crd, 60)
 				}
 			}
 		}

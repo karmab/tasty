@@ -45,7 +45,7 @@ var removeCmd = &cobra.Command{
 		}
 		for _, operator := range args {
 			color.Cyan("Removing operator %s", operator)
-			source, defaultchannel, csv, _, target_namespace, _, _, _ := get_operator(operator)
+			source, defaultchannel, csv, _, target_namespace, _, _ := get_operator(operator)
 			t := template.New("Template")
 			tpl, err := t.Parse(operatordata)
 			check(err)

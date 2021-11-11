@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -55,31 +54,26 @@ func get_client() (client dynamic.Interface) {
 	return client
 }
 
-func wait_crd(crd string, version string, timeout int) {
-	crdsplit := strings.SplitN(crd, ".", 2)
-	resource := crdsplit[0]
-	group := crdsplit[1]
+func wait_crd(crd string, timeout int) {
 	client := get_client()
-	crdGVR := schema.GroupVersionResource{
-		Group:    group,
-		Version:  version,
-		Resource: resource,
-	}
 	i := 0
 	for i < timeout {
-		_, err := client.Resource(crdGVR).Namespace("default").List(context.TODO(), metav1.ListOptions{})
-		if err == nil {
-			fmt.Printf("CRD %s ready\n", crd)
-			break
-		} else {
-			color.Cyan("Waiting for CRD %s to be created\n", crd)
-			time.Sleep(5 * time.Second)
-			i += 5
+		crds := schema.GroupVersionResource{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"}
+		list, err := client.Resource(crds).Namespace("").List(context.TODO(), metav1.ListOptions{})
+		check(err)
+		for _, d := range list.Items {
+			if d.GetName() == crd {
+				return
+			}
 		}
+		color.Cyan("Waiting for CRD %s to be created\n", crd)
+		time.Sleep(5 * time.Second)
+		i += 5
 	}
+	color.Red("Timeout waiting ffor CRD %s\n", crd)
 }
 
-func get_operator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string, crdversion string) {
+func get_operator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string) {
 	target_namespace = strings.Split(operator, "-operator")[0]
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
@@ -123,12 +117,11 @@ func get_operator(operator string) (source string, defaultchannel string, csv st
 					ownedlist := ownedlistmap.([]interface{})
 					owned := ownedlist[0].(map[string]interface{})
 					crd = owned["name"].(string)
-					crdversion = owned["version"].(string)
 				}
 			}
 		}
 	}
-	return source, defaultchannel, csv, description, target_namespace, channels, crd, crdversion
+	return source, defaultchannel, csv, description, target_namespace, channels, crd
 }
 
 type Operator struct {
