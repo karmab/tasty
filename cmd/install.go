@@ -36,25 +36,26 @@ var installCmd = &cobra.Command{
 		for _, operator := range args {
 			color.Cyan("Installing operator %s", operator)
 			stdout, _ := cmd.Flags().GetBool("stdout")
+			wait, _ := cmd.Flags().GetBool("wait")
 			targetchannel, _ := cmd.Flags().GetString("channel")
-			namespace, source, defaultchannel, csv, _, target_namespace, channels, crd := get_operator(operator)
-			if targetchannel != "" && !contains(channels, targetchannel) {
-				color.Red("Target channel %s not found in %s", targetchannel, channels)
-				os.Exit(1)
-			} else {
-				defaultchannel = targetchannel
+			source, defaultchannel, csv, _, target_namespace, channels, crd, crdversion := get_operator(operator)
+			if targetchannel != "" {
+				if contains(channels, targetchannel) {
+					defaultchannel = targetchannel
+				} else {
+					color.Red("Target channel %s not found in %s", targetchannel, channels)
+					os.Exit(1)
+				}
 			}
 			t := template.New("Template")
 			tpl, err := t.Parse(operatordata)
 			check(err)
 			operatordata := Operator{
-				Name:            operator,
-				Namespace:       namespace,
-				Source:          source,
-				DefaultChannel:  defaultchannel,
-				Csv:             csv,
-				TargetNamespace: target_namespace,
-				Crd:             crd,
+				Name:           operator,
+				Source:         source,
+				DefaultChannel: defaultchannel,
+				Csv:            csv,
+				Namespace:      target_namespace,
 			}
 			if stdout == true {
 				err = tpl.Execute(os.Stdout, operatordata)
@@ -72,6 +73,9 @@ var installCmd = &cobra.Command{
 				check(err)
 				fmt.Println(string(applyout))
 				os.Remove(tmpfile.Name())
+				if wait == true {
+					wait_crd(crd, crdversion, 60)
+				}
 			}
 		}
 	},
@@ -81,4 +85,5 @@ func init() {
 	rootCmd.AddCommand(installCmd)
 	installCmd.Flags().StringP("channel", "c", "", "Target channel")
 	installCmd.Flags().BoolP("stdout", "s", false, "Print to stdout")
+	installCmd.Flags().BoolP("wait", "w", false, "Wait for crd to show up")
 }

@@ -17,7 +17,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -52,7 +55,31 @@ func get_client() (client dynamic.Interface) {
 	return client
 }
 
-func get_operator(operator string) (namespace string, source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string) {
+func wait_crd(crd string, version string, timeout int) {
+	crdsplit := strings.SplitN(crd, ".", 2)
+	resource := crdsplit[0]
+	group := crdsplit[1]
+	client := get_client()
+	crdGVR := schema.GroupVersionResource{
+		Group:    group,
+		Version:  version,
+		Resource: resource,
+	}
+	i := 0
+	for i < timeout {
+		_, err := client.Resource(crdGVR).Namespace("default").List(context.TODO(), metav1.ListOptions{})
+		if err == nil {
+			fmt.Printf("CRD %s ready\n", crd)
+			break
+		} else {
+			fmt.Printf("Waiting for CRD %s to be created\n", crd)
+			time.Sleep(5 * time.Second)
+			i += 5
+		}
+	}
+}
+
+func get_operator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string, crdversion string) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	check(err)
@@ -60,8 +87,6 @@ func get_operator(operator string) (namespace string, source string, defaultchan
 	check(err)
 	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 	operatorinfo, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
-	check(err)
-	namespace, _, err = unstructured.NestedString(operatorinfo.Object, "metadata", "namespace")
 	check(err)
 	source, _, err = unstructured.NestedString(operatorinfo.Object, "status", "catalogSource")
 	check(err)
@@ -97,25 +122,23 @@ func get_operator(operator string) (namespace string, source string, defaultchan
 					ownedlist := ownedlistmap.([]interface{})
 					owned := ownedlist[0].(map[string]interface{})
 					crd = owned["name"].(string)
+					crdversion = owned["version"].(string)
 				}
 			}
 		}
 	}
-
-	return namespace, source, defaultchannel, csv, description, target_namespace, channels, crd
+	return source, defaultchannel, csv, description, target_namespace, channels, crd, crdversion
 }
 
 type Operator struct {
-	Name            string
-	Namespace       string
-	Source          string
-	DefaultChannel  string
-	Csv             string
-	TargetNamespace string
-	Crd             string
+	Name           string
+	Source         string
+	DefaultChannel string
+	Csv            string
+	Namespace      string
 }
 
-var operatordata = `{{ if and (ne .Namespace "openshift-operators") (ne .Namespace "openshift-marketplace") }}
+var operatordata = `{{ if ne .Namespace "openshift-operators" }}
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -136,7 +159,7 @@ spec:
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
-  name: {{ .Name }}-subscription
+  name: {{ .Name }}
   namespace: {{ .Namespace }}
 spec:
   channel: "{{ .DefaultChannel }}"
