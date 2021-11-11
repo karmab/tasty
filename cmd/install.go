@@ -36,7 +36,14 @@ var installCmd = &cobra.Command{
 		for _, operator := range args {
 			color.Cyan("Installing operator %s", operator)
 			stdout, _ := cmd.Flags().GetBool("stdout")
-			namespace, source, defaultchannel, csv, _, target_namespace, crd := get_operator(operator)
+			targetchannel, _ := cmd.Flags().GetString("channel")
+			namespace, source, defaultchannel, csv, _, target_namespace, channels, crd := get_operator(operator)
+			if targetchannel != "" && !contains(channels, targetchannel) {
+				color.Red("Target channel %s not found in %s", targetchannel, channels)
+				os.Exit(1)
+			} else {
+				defaultchannel = targetchannel
+			}
 			t := template.New("Template")
 			tpl, err := t.Parse(operatordata)
 			check(err)
@@ -72,5 +79,6 @@ var installCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(installCmd)
+	installCmd.Flags().StringP("channel", "c", "", "Target channel")
 	installCmd.Flags().BoolP("stdout", "s", false, "Print to stdout")
 }

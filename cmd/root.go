@@ -34,6 +34,15 @@ func check(e error) {
 	}
 }
 
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
 func get_client() (client dynamic.Interface) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
@@ -43,7 +52,7 @@ func get_client() (client dynamic.Interface) {
 	return client
 }
 
-func get_operator(operator string) (namespace string, source string, defaultchannel string, csv string, description string, target_namespace string, crd string) {
+func get_operator(operator string) (namespace string, source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	check(err)
@@ -58,11 +67,12 @@ func get_operator(operator string) (namespace string, source string, defaultchan
 	check(err)
 	defaultchannel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
 	check(err)
-	channels, _, err := unstructured.NestedSlice(operatorinfo.Object, "status", "channels")
+	allchannels, _, err := unstructured.NestedSlice(operatorinfo.Object, "status", "channels")
 	check(err)
-	for _, channel := range channels {
+	for _, channel := range allchannels {
 		channelmap, _ := channel.(map[string]interface{})
 		channelname := channelmap["name"]
+		channels = append(channels, channelname.(string))
 		if channelname == defaultchannel {
 			csv = channelmap["currentCSV"].(string)
 			csvdescmap, _ := channelmap["currentCSVDesc"].(map[string]interface{})
@@ -92,7 +102,7 @@ func get_operator(operator string) (namespace string, source string, defaultchan
 		}
 	}
 
-	return namespace, source, defaultchannel, csv, description, target_namespace, crd
+	return namespace, source, defaultchannel, csv, description, target_namespace, channels, crd
 }
 
 type Operator struct {
