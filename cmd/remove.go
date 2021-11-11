@@ -65,7 +65,6 @@ var removeCmd = &cobra.Command{
 			check(err)
 			tmpfile.Close()
 			applyout, _ := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
-			// check(err)
 			fmt.Println(string(applyout))
 			os.Remove(tmpfile.Name())
 		}

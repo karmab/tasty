@@ -72,7 +72,7 @@ func wait_crd(crd string, version string, timeout int) {
 			fmt.Printf("CRD %s ready\n", crd)
 			break
 		} else {
-			fmt.Printf("Waiting for CRD %s to be created\n", crd)
+			color.Cyan("Waiting for CRD %s to be created\n", crd)
 			time.Sleep(5 * time.Second)
 			i += 5
 		}
@@ -80,6 +80,7 @@ func wait_crd(crd string, version string, timeout int) {
 }
 
 func get_operator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string, crdversion string) {
+	target_namespace = strings.Split(operator, "-operator")[0]
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	check(err)
