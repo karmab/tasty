@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"tasty/pkg/utils"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,12 +45,12 @@ var searchCmd = &cobra.Command{
 		}
 		kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-		check(err)
+		utils.Check(err)
 		client, err := dynamic.NewForConfig(config)
-		check(err)
+		utils.Check(err)
 		packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 		list, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
-		check(err)
+		utils.Check(err)
 		for _, d := range list.Items {
 			currentoperator = d.GetName()
 			if strings.Contains(currentoperator, operator) {

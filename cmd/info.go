@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"log"
 
+	"tasty/pkg/utils"
+
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
@@ -40,7 +42,7 @@ to quickly create a Cobra application.`,
 		} else {
 			operator = args[0]
 		}
-		source, defaultchannel, csv, description, target_namespace, channels, _ := get_operator(operator)
+		source, defaultchannel, csv, description, target_namespace, channels, _ := utils.GetOperator(operator)
 		color.Cyan("Providing information for app %s", operator)
 		fmt.Println("source: ", source)
 		fmt.Println("channels: ", channels)

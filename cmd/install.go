@@ -21,6 +21,7 @@ import (
 	"html/template"
 	"os"
 	"os/exec"
+	"tasty/pkg/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -38,9 +39,9 @@ var installCmd = &cobra.Command{
 			stdout, _ := cmd.Flags().GetBool("stdout")
 			wait, _ := cmd.Flags().GetBool("wait")
 			targetchannel, _ := cmd.Flags().GetString("channel")
-			source, defaultchannel, csv, _, target_namespace, channels, crd := get_operator(operator)
+			source, defaultchannel, csv, _, target_namespace, channels, crd := utils.GetOperator(operator)
 			if targetchannel != "" {
-				if contains(channels, targetchannel) {
+				if utils.Contains(channels, targetchannel) {
 					defaultchannel = targetchannel
 				} else {
 					color.Red("Target channel %s not found in %s", targetchannel, channels)
@@ -48,9 +49,9 @@ var installCmd = &cobra.Command{
 				}
 			}
 			t := template.New("Template")
-			tpl, err := t.Parse(operatordata)
-			check(err)
-			operatordata := Operator{
+			tpl, err := t.Parse(utils.OperatorData)
+			utils.Check(err)
+			operatordata := utils.Operator{
 				Name:           operator,
 				Source:         source,
 				DefaultChannel: defaultchannel,
@@ -59,22 +60,22 @@ var installCmd = &cobra.Command{
 			}
 			if stdout == true {
 				err = tpl.Execute(os.Stdout, operatordata)
-				check(err)
+				utils.Check(err)
 			} else {
 				buf := &bytes.Buffer{}
 				err = tpl.Execute(buf, operatordata)
-				check(err)
+				utils.Check(err)
 				tmpfile, err := os.CreateTemp("", "tasty")
-				check(err)
+				utils.Check(err)
 				_, err = tmpfile.Write(buf.Bytes())
-				check(err)
+				utils.Check(err)
 				tmpfile.Close()
 				applyout, err := exec.Command("oc", "apply", "-f", tmpfile.Name()).Output()
-				check(err)
+				utils.Check(err)
 				fmt.Println(string(applyout))
 				os.Remove(tmpfile.Name())
 				if wait == true {
-					wait_crd(crd, 60)
+					utils.WaitCrd(crd, 60)
 				}
 			}
 		}

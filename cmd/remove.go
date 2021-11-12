@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"tasty/pkg/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -45,11 +46,11 @@ var removeCmd = &cobra.Command{
 		}
 		for _, operator := range args {
 			color.Cyan("Removing operator %s", operator)
-			source, defaultchannel, csv, _, target_namespace, _, _ := get_operator(operator)
+			source, defaultchannel, csv, _, target_namespace, _, _ := utils.GetOperator(operator)
 			t := template.New("Template")
-			tpl, err := t.Parse(operatordata)
-			check(err)
-			operatordata := Operator{
+			tpl, err := t.Parse(utils.OperatorData)
+			utils.Check(err)
+			operatordata := utils.Operator{
 				Name:           operator,
 				Source:         source,
 				DefaultChannel: defaultchannel,
@@ -58,11 +59,11 @@ var removeCmd = &cobra.Command{
 			}
 			buf := &bytes.Buffer{}
 			err = tpl.Execute(buf, operatordata)
-			check(err)
+			utils.Check(err)
 			tmpfile, err := os.CreateTemp("", "tasty")
-			check(err)
+			utils.Check(err)
 			_, err = tmpfile.Write(buf.Bytes())
-			check(err)
+			utils.Check(err)
 			tmpfile.Close()
 			applyout, _ := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
 			fmt.Println(string(applyout))

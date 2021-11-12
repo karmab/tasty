@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"tasty/pkg/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/syohex/go-texttable"
@@ -45,9 +46,9 @@ to quickly create a Cobra application.`,
 		var operators []string
 		kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-		check(err)
+		utils.Check(err)
 		client, err := dynamic.NewForConfig(config)
-		check(err)
+		utils.Check(err)
 		installed, _ := cmd.Flags().GetBool("installed")
 		if installed {
 			subscriptionsGVR := schema.GroupVersionResource{
@@ -56,14 +57,14 @@ to quickly create a Cobra application.`,
 				Resource: "subscriptions",
 			}
 			list, err := client.Resource(subscriptionsGVR).Namespace("").List(context.TODO(), metav1.ListOptions{})
-			check(err)
+			utils.Check(err)
 			for _, d := range list.Items {
 				operators = append(operators, d.GetName())
 			}
 		} else {
 			packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 			list, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
-			check(err)
+			utils.Check(err)
 			for _, d := range list.Items {
 				operators = append(operators, d.GetName())
 			}
