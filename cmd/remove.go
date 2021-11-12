@@ -34,7 +34,7 @@ var removeCmd = &cobra.Command{
 	Short: "Remove operators",
 	Long:  `Remove operators`,
 	Run: func(cmd *cobra.Command, args []string) {
-		yes, _ := cmd.Flags().GetBool("stdout")
+		yes, _ := cmd.Flags().GetBool("yes")
 		if yes != true {
 			var confirmation string
 			color.Green("Are you sure? [y/N]:")
