@@ -49,7 +49,7 @@ var installCmd = &cobra.Command{
 				}
 			}
 			t := template.New("Template")
-			tpl, err := t.Parse(utils.OperatorData)
+			tpl, err := t.Parse(utils.OperatorTemplate)
 			utils.Check(err)
 			operatordata := utils.Operator{
 				Name:           operator,
