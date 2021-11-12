@@ -19,15 +19,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"tasty/pkg/utils"
 
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // searchCmd represents the search command
@@ -43,13 +40,9 @@ var searchCmd = &cobra.Command{
 		} else {
 			operator = args[0]
 		}
-		kubeconfig, _ := os.LookupEnv("KUBECONFIG")
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-		utils.Check(err)
-		client, err := dynamic.NewForConfig(config)
-		utils.Check(err)
+		dynamic := utils.GetDynamicClient()
 		packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
-		list, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
+		list, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
 		utils.Check(err)
 		for _, d := range list.Items {
 			currentoperator = d.GetName()
