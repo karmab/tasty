@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -72,9 +73,15 @@ func Contains(s []string, str string) bool {
 }
 
 func GetK8sClient() (client *kubernetes.Clientset) {
-	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+	homedir := os.Getenv("HOME")
+	kubeconfigenv, _ := os.LookupEnv("KUBECONFIG")
+	kubeconfig := strings.Replace(kubeconfigenv, "~", homedir, 1)
 	if kubeconfig == "" {
-		color.Red("KUBECONFIG env variable needs to be set")
+		kubeconfig = filepath.Join(homedir, ".kube", "config")
+	}
+	_, err := os.Stat(kubeconfig)
+	if err != nil {
+		color.Red("KUBECONFIG file %s not found", kubeconfig)
 		os.Exit(1)
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
@@ -85,9 +92,15 @@ func GetK8sClient() (client *kubernetes.Clientset) {
 }
 
 func GetDynamicClient() (client dynamic.Interface) {
-	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+	homedir := os.Getenv("HOME")
+	kubeconfigenv, _ := os.LookupEnv("KUBECONFIG")
+	kubeconfig := strings.Replace(kubeconfigenv, "~", homedir, 1)
 	if kubeconfig == "" {
-		color.Red("KUBECONFIG env variable needs to be set")
+		kubeconfig = filepath.Join(homedir, ".kube", "config")
+	}
+	_, err := os.Stat(kubeconfig)
+	if err != nil {
+		color.Red("KUBECONFIG file %s not found", kubeconfig)
 		os.Exit(1)
 	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
