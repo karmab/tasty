@@ -23,13 +23,15 @@ type Operator struct {
 	Namespace      string
 }
 
-var OperatorTemplate = `{{ if ne .Namespace "openshift-operators" }}
+var OperatorTemplate = `{{ if ne .Namespace "openshift-operators" -}}
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: {{ .Namespace }}
   labels:
     openshift.io/cluster-monitoring: "true"
-  name: {{ .Namespace }}
+  annotations:
+    workload.openshift.io/allowed: management
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
@@ -40,7 +42,7 @@ spec:
   targetNamespaces:
   - {{ .Namespace }}
 ---
-{{ end }}
+{{ end -}}
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -95,11 +97,11 @@ func GetDynamicClient() (client dynamic.Interface) {
 }
 
 func WaitCrd(crd string, timeout int) {
-	client := GetDynamicClient()
+	dynamic := GetDynamicClient()
 	i := 0
 	for i < timeout {
 		crds := schema.GroupVersionResource{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"}
-		list, err := client.Resource(crds).Namespace("").List(context.TODO(), metav1.ListOptions{})
+		list, err := dynamic.Resource(crds).Namespace("").List(context.TODO(), metav1.ListOptions{})
 		Check(err)
 		for _, d := range list.Items {
 			if d.GetName() == crd {
@@ -115,13 +117,9 @@ func WaitCrd(crd string, timeout int) {
 
 func GetOperator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string) {
 	target_namespace = strings.Split(operator, "-operator")[0]
-	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	Check(err)
-	client, err := dynamic.NewForConfig(config)
-	Check(err)
+	dynamic := GetDynamicClient()
 	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
-	operatorinfo, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
+	operatorinfo, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
 	Check(err)
 	source, _, err = unstructured.NestedString(operatorinfo.Object, "status", "catalogSource")
 	Check(err)

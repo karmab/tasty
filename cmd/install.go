@@ -37,9 +37,9 @@ var installCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, operator := range args {
-			color.Cyan("Installing operator %s", operator)
 			stdout, _ := cmd.Flags().GetBool("stdout")
 			wait, _ := cmd.Flags().GetBool("wait")
+			// sno, _ := cmd.Flags().GetBool("sno")
 			targetchannel, _ := cmd.Flags().GetString("channel")
 			source, defaultchannel, csv, _, target_namespace, channels, crd := utils.GetOperator(operator)
 			if targetchannel != "" {
@@ -64,11 +64,13 @@ var installCmd = &cobra.Command{
 				err = tpl.Execute(os.Stdout, operatordata)
 				utils.Check(err)
 			} else {
+				color.Cyan("Installing operator %s", operator)
 				dynamic := utils.GetDynamicClient()
 				if target_namespace != "openshift-operators" {
 					color.Cyan("Creating namespace %s", target_namespace)
 					k8sclient := utils.GetK8sClient()
-					nsSpec := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: target_namespace}}
+					nsmetaSpec := metav1.ObjectMeta{Name: target_namespace, Annotations: map[string]string{"workload.openshift.io/allowed": "management"}}
+					nsSpec := &v1.Namespace{ObjectMeta: nsmetaSpec}
 					_, err := k8sclient.CoreV1().Namespaces().Create(context.TODO(), nsSpec, metav1.CreateOptions{})
 					utils.Check(err)
 					color.Cyan("Creating operator group %s-operatorgroup", operator)
