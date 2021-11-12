@@ -16,16 +16,16 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"html/template"
 	"os"
-	"os/exec"
 	"strings"
 	"tasty/pkg/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // removeCmd represents the remove command
@@ -44,30 +44,32 @@ var removeCmd = &cobra.Command{
 				os.Exit(0)
 			}
 		}
+		subscriptionsGVR := schema.GroupVersionResource{
+			Group:    "operators.coreos.com",
+			Version:  "v1alpha1",
+			Resource: "subscriptions",
+		}
+		operatorgroupsGVR := schema.GroupVersionResource{
+			Group:    "operators.coreos.com",
+			Version:  "v1",
+			Resource: "operatorgroups",
+		}
 		for _, operator := range args {
 			color.Cyan("Removing operator %s", operator)
-			source, defaultchannel, csv, _, target_namespace, _, _ := utils.GetOperator(operator)
-			t := template.New("Template")
-			tpl, err := t.Parse(utils.OperatorTemplate)
+			_, _, _, _, target_namespace, _, _ := utils.GetOperator(operator)
+			dynamic := utils.GetDynamicClient()
+			color.Cyan("Removing subscription %s", operator)
+			err := dynamic.Resource(subscriptionsGVR).Namespace(target_namespace).Delete(context.TODO(), operator, metav1.DeleteOptions{})
 			utils.Check(err)
-			operatordata := utils.Operator{
-				Name:           operator,
-				Source:         source,
-				DefaultChannel: defaultchannel,
-				Csv:            csv,
-				Namespace:      target_namespace,
+			if target_namespace != "openshift-operators" {
+				color.Cyan("Removing operator group %s-operatorgroup", operator)
+				k8sclient := utils.GetK8sClient()
+				err := dynamic.Resource(operatorgroupsGVR).Namespace(target_namespace).Delete(context.TODO(), operator+"-operatorgroup", metav1.DeleteOptions{})
+				utils.Check(err)
+				color.Cyan("Removing namespace group %s", target_namespace)
+				err = k8sclient.CoreV1().Namespaces().Delete(context.TODO(), target_namespace, metav1.DeleteOptions{})
+				utils.Check(err)
 			}
-			buf := &bytes.Buffer{}
-			err = tpl.Execute(buf, operatordata)
-			utils.Check(err)
-			tmpfile, err := os.CreateTemp("", "tasty")
-			utils.Check(err)
-			_, err = tmpfile.Write(buf.Bytes())
-			utils.Check(err)
-			tmpfile.Close()
-			applyout, _ := exec.Command("oc", "delete", "-f", tmpfile.Name()).Output()
-			fmt.Println(string(applyout))
-			os.Remove(tmpfile.Name())
 		}
 	},
 }

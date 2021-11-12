@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -67,7 +68,16 @@ func Contains(s []string, str string) bool {
 	return false
 }
 
-func GetClient() (client dynamic.Interface) {
+func GetK8sClient() (client *kubernetes.Clientset) {
+	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	Check(err)
+	client, _ = kubernetes.NewForConfig(config)
+	Check(err)
+	return client
+}
+
+func GetDynamicClient() (client dynamic.Interface) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	Check(err)
@@ -77,7 +87,7 @@ func GetClient() (client dynamic.Interface) {
 }
 
 func WaitCrd(crd string, timeout int) {
-	client := GetClient()
+	client := GetDynamicClient()
 	i := 0
 	for i < timeout {
 		crds := schema.GroupVersionResource{Group: "apiextensions.k8s.io", Version: "v1", Resource: "customresourcedefinitions"}
@@ -92,7 +102,7 @@ func WaitCrd(crd string, timeout int) {
 		time.Sleep(5 * time.Second)
 		i += 5
 	}
-	color.Red("Timeout waiting ffor CRD %s\n", crd)
+	color.Red("Timeout waiting for CRD %s\n", crd)
 }
 
 func GetOperator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string) {

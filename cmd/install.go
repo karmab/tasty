@@ -16,15 +16,17 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
-	"fmt"
+	"context"
 	"html/template"
 	"os"
-	"os/exec"
 	"tasty/pkg/utils"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // installCmd represents the install command
@@ -48,32 +50,75 @@ var installCmd = &cobra.Command{
 					os.Exit(1)
 				}
 			}
-			t := template.New("Template")
-			tpl, err := t.Parse(utils.OperatorTemplate)
-			utils.Check(err)
-			operatordata := utils.Operator{
-				Name:           operator,
-				Source:         source,
-				DefaultChannel: defaultchannel,
-				Csv:            csv,
-				Namespace:      target_namespace,
-			}
 			if stdout == true {
+				t := template.New("Template")
+				tpl, err := t.Parse(utils.OperatorTemplate)
+				utils.Check(err)
+				operatordata := utils.Operator{
+					Name:           operator,
+					Source:         source,
+					DefaultChannel: defaultchannel,
+					Csv:            csv,
+					Namespace:      target_namespace,
+				}
 				err = tpl.Execute(os.Stdout, operatordata)
 				utils.Check(err)
 			} else {
-				buf := &bytes.Buffer{}
-				err = tpl.Execute(buf, operatordata)
+				dynamic := utils.GetDynamicClient()
+				if target_namespace != "openshift-operators" {
+					color.Cyan("Creating namespace %s", target_namespace)
+					k8sclient := utils.GetK8sClient()
+					nsSpec := &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: target_namespace}}
+					_, err := k8sclient.CoreV1().Namespaces().Create(context.TODO(), nsSpec, metav1.CreateOptions{})
+					utils.Check(err)
+					color.Cyan("Creating operator group %s-operatorgroup", operator)
+					operatorgroupsGVR := schema.GroupVersionResource{
+						Group:    "operators.coreos.com",
+						Version:  "v1",
+						Resource: "operatorgroups",
+					}
+
+					operatorgroupspec := &unstructured.Unstructured{
+						Object: map[string]interface{}{
+							"kind":       "OperatorGroup",
+							"apiVersion": "operators.coreos.com/v1",
+							"metadata": map[string]interface{}{
+								"name":      operator + "-operatorgroup",
+								"namespace": target_namespace,
+							},
+							"spec": map[string]interface{}{
+								"targetNamespaces": []string{target_namespace},
+							},
+						},
+					}
+					_, err = dynamic.Resource(operatorgroupsGVR).Namespace(target_namespace).Create(context.TODO(), operatorgroupspec, metav1.CreateOptions{})
+					utils.Check(err)
+				}
+				color.Cyan("Creating subscription %s", operator)
+				subscriptionsGVR := schema.GroupVersionResource{
+					Group:    "operators.coreos.com",
+					Version:  "v1alpha1",
+					Resource: "subscriptions",
+				}
+
+				subspec := &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       "Subscription",
+						"apiVersion": "operators.coreos.com/v1alpha1",
+						"metadata": map[string]interface{}{
+							"name":      operator,
+							"namespace": target_namespace,
+						},
+						"spec": map[string]interface{}{
+							"channel":         defaultchannel,
+							"name":            operator,
+							"source":          source,
+							"sourceNamespace": "openshift-marketplace",
+						},
+					},
+				}
+				_, err := dynamic.Resource(subscriptionsGVR).Namespace(target_namespace).Create(context.TODO(), subspec, metav1.CreateOptions{})
 				utils.Check(err)
-				tmpfile, err := os.CreateTemp("", "tasty")
-				utils.Check(err)
-				_, err = tmpfile.Write(buf.Bytes())
-				utils.Check(err)
-				tmpfile.Close()
-				applyout, err := exec.Command("oc", "apply", "-f", tmpfile.Name()).Output()
-				utils.Check(err)
-				fmt.Println(string(applyout))
-				os.Remove(tmpfile.Name())
 				if wait == true {
 					utils.WaitCrd(crd, 60)
 				}
