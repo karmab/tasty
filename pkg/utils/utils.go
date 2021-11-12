@@ -57,7 +57,8 @@ spec:
 
 func Check(e error) {
 	if e != nil {
-		panic(e)
+		color.Red("%s", e)
+		os.Exit(1)
 	}
 }
 
