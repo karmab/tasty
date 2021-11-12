@@ -18,7 +18,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 	"tasty/pkg/utils"
 
@@ -26,8 +25,6 @@ import (
 	"github.com/syohex/go-texttable"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var result map[string]interface{}
@@ -44,11 +41,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var operators []string
-		kubeconfig, _ := os.LookupEnv("KUBECONFIG")
-		config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-		utils.Check(err)
-		client, err := dynamic.NewForConfig(config)
-		utils.Check(err)
+		dynamic := utils.GetDynamicClient()
 		installed, _ := cmd.Flags().GetBool("installed")
 		if installed {
 			subscriptionsGVR := schema.GroupVersionResource{
@@ -56,14 +49,14 @@ to quickly create a Cobra application.`,
 				Version:  "v1alpha1",
 				Resource: "subscriptions",
 			}
-			list, err := client.Resource(subscriptionsGVR).Namespace("").List(context.TODO(), metav1.ListOptions{})
+			list, err := dynamic.Resource(subscriptionsGVR).Namespace("").List(context.TODO(), metav1.ListOptions{})
 			utils.Check(err)
 			for _, d := range list.Items {
 				operators = append(operators, d.GetName())
 			}
 		} else {
 			packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
-			list, err := client.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
+			list, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
 			utils.Check(err)
 			for _, d := range list.Items {
 				operators = append(operators, d.GetName())

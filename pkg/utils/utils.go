@@ -70,6 +70,10 @@ func Contains(s []string, str string) bool {
 
 func GetK8sClient() (client *kubernetes.Clientset) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+	if kubeconfig == "" {
+		color.Red("KUBECONFIG env variable needs to be set")
+		os.Exit(1)
+	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	Check(err)
 	client, _ = kubernetes.NewForConfig(config)
@@ -79,6 +83,10 @@ func GetK8sClient() (client *kubernetes.Clientset) {
 
 func GetDynamicClient() (client dynamic.Interface) {
 	kubeconfig, _ := os.LookupEnv("KUBECONFIG")
+	if kubeconfig == "" {
+		color.Red("KUBECONFIG env variable needs to be set")
+		os.Exit(1)
+	}
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	Check(err)
 	client, err = dynamic.NewForConfig(config)

@@ -16,9 +16,6 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -34,9 +31,4 @@ func Execute() {
 }
 
 func init() {
-	kubeconfig := os.Getenv("KUBECONFIG")
-	if kubeconfig == "" {
-		color.Red("KUBECONFIG env variable needs to be set")
-		os.Exit(1)
-	}
 }
