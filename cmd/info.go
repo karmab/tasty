@@ -43,7 +43,7 @@ to quickly create a Cobra application.`,
 			operator = args[0]
 		}
 		source, defaultchannel, csv, description, target_namespace, channels, _ := utils.GetOperator(operator)
-		color.Cyan("Providing information for app %s", operator)
+		color.Cyan("Providing information on operator %s", operator)
 		fmt.Println("source: ", source)
 		fmt.Println("channels: ", channels)
 		fmt.Println("defaultchannel: ", defaultchannel)
