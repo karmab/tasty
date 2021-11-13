@@ -163,9 +163,7 @@ func GetOperator(operator string) (source string, defaultchannel string, csv str
 			if customresourcedefinitionsmap, ok := csvdescmap["customresourcedefinitions"]; ok {
 				customresourcedefinitions, _ := customresourcedefinitionsmap.(map[string]interface{})
 				ownedlistmap := customresourcedefinitions["owned"]
-				if ownedlistmap == nil {
-					crd = ""
-				} else {
+				if ownedlistmap != nil {
 					ownedlist := ownedlistmap.([]interface{})
 					owned := ownedlist[0].(map[string]interface{})
 					crd = owned["name"].(string)

@@ -121,7 +121,7 @@ var installCmd = &cobra.Command{
 				}
 				_, err := dynamic.Resource(subscriptionsGVR).Namespace(target_namespace).Create(context.TODO(), subspec, metav1.CreateOptions{})
 				utils.Check(err)
-				if wait == true {
+				if wait == true && crd != "" {
 					utils.WaitCrd(crd, 60)
 				}
 			}
