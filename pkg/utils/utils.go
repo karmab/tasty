@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -73,38 +74,60 @@ func Contains(s []string, str string) bool {
 }
 
 func GetK8sClient() (client *kubernetes.Clientset) {
+	var config *rest.Config
+	var err error
 	homedir := os.Getenv("HOME")
-	kubeconfigenv, _ := os.LookupEnv("KUBECONFIG")
-	kubeconfig := strings.Replace(kubeconfigenv, "~", homedir, 1)
-	if kubeconfig == "" {
-		kubeconfig = filepath.Join(homedir, ".kube", "config")
+	kubeport, _ := os.LookupEnv("KUBERNETES_PORT")
+	if kubeport != "" {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			color.Red("Couldn't load in-cluster config")
+			os.Exit(1)
+		}
+	} else {
+		kubeconfigenv, _ := os.LookupEnv("KUBECONFIG")
+		kubeconfig := strings.Replace(kubeconfigenv, "~", homedir, 1)
+		if kubeconfig == "" {
+			kubeconfig = filepath.Join(homedir, ".kube", "config")
+		}
+		_, err = os.Stat(kubeconfig)
+		if err != nil {
+			color.Red("KUBECONFIG file %s not found", kubeconfig)
+			os.Exit(1)
+		}
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		Check(err)
 	}
-	_, err := os.Stat(kubeconfig)
-	if err != nil {
-		color.Red("KUBECONFIG file %s not found", kubeconfig)
-		os.Exit(1)
-	}
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	Check(err)
-	client, _ = kubernetes.NewForConfig(config)
+	client, err = kubernetes.NewForConfig(config)
 	Check(err)
 	return client
 }
 
 func GetDynamicClient() (client dynamic.Interface) {
+	var config *rest.Config
+	var err error
 	homedir := os.Getenv("HOME")
-	kubeconfigenv, _ := os.LookupEnv("KUBECONFIG")
-	kubeconfig := strings.Replace(kubeconfigenv, "~", homedir, 1)
-	if kubeconfig == "" {
-		kubeconfig = filepath.Join(homedir, ".kube", "config")
+	kubeport, _ := os.LookupEnv("KUBERNETES_PORT")
+	if kubeport != "" {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			color.Red("Couldn't load in-cluster config")
+			os.Exit(1)
+		}
+	} else {
+		kubeconfigenv, _ := os.LookupEnv("KUBECONFIG")
+		kubeconfig := strings.Replace(kubeconfigenv, "~", homedir, 1)
+		if kubeconfig == "" {
+			kubeconfig = filepath.Join(homedir, ".kube", "config")
+		}
+		_, err = os.Stat(kubeconfig)
+		if err != nil {
+			color.Red("KUBECONFIG file %s not found", kubeconfig)
+			os.Exit(1)
+		}
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		Check(err)
 	}
-	_, err := os.Stat(kubeconfig)
-	if err != nil {
-		color.Red("KUBECONFIG file %s not found", kubeconfig)
-		os.Exit(1)
-	}
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	Check(err)
 	client, err = dynamic.NewForConfig(config)
 	Check(err)
 	return client
