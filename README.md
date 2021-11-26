@@ -21,13 +21,12 @@ curl -s -L https://github.com/karmab/tasty/releases/download/v0.4.0/tasty-linux-
 chmod u+x /usr/bin/tasty
 ```
 
-##  Running as oc plugin
+##  Running as kubelet and oc plugin
 
-Run the following and you can then use `oc olm`
+Run the following and you can then use `kubectl olm` or `oc olm`
 
 ```
-TASTYDIR=$(dirname $(which tasty))
-ln -s $TASTYDIR/tasty $TASTYDIR/oc-olm
+tasty config --enable-as-plugin
 ```
 
 ## Installing operators from a pod
