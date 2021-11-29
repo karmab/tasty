@@ -40,15 +40,19 @@ var installCmd = &cobra.Command{
 			stdout, _ := cmd.Flags().GetBool("stdout")
 			wait, _ := cmd.Flags().GetBool("wait")
 			// sno, _ := cmd.Flags().GetBool("sno")
-			targetchannel, _ := cmd.Flags().GetString("channel")
-			source, defaultchannel, csv, _, target_namespace, channels, crd := utils.GetOperator(operator)
-			if targetchannel != "" {
-				if utils.Contains(channels, targetchannel) {
-					defaultchannel = targetchannel
+			target_channel, _ := cmd.Flags().GetString("channel")
+			target_namespace, _ := cmd.Flags().GetString("namespace")
+			source, default_channel, csv, _, default_namespace, channels, crd := utils.GetOperator(operator)
+			if target_channel != "" {
+				if utils.Contains(channels, target_channel) {
+					default_channel = target_channel
 				} else {
-					color.Red("Target channel %s not found in %s", targetchannel, channels)
+					color.Red("Target channel %s not found in %s", target_channel, channels)
 					os.Exit(1)
 				}
+			}
+			if target_namespace == "" {
+				target_namespace = default_namespace
 			}
 			if stdout == true {
 				t := template.New("Template")
@@ -57,7 +61,7 @@ var installCmd = &cobra.Command{
 				operatordata := utils.Operator{
 					Name:           operator,
 					Source:         source,
-					DefaultChannel: defaultchannel,
+					DefaultChannel: default_channel,
 					Csv:            csv,
 					Namespace:      target_namespace,
 				}
@@ -112,7 +116,7 @@ var installCmd = &cobra.Command{
 							"namespace": target_namespace,
 						},
 						"spec": map[string]interface{}{
-							"channel":         defaultchannel,
+							"channel":         target_channel,
 							"name":            operator,
 							"source":          source,
 							"sourceNamespace": "openshift-marketplace",
@@ -132,6 +136,7 @@ var installCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(installCmd)
 	installCmd.Flags().StringP("channel", "c", "", "Target channel")
+	installCmd.Flags().StringP("namespace", "n", "", "Target namespace")
 	installCmd.Flags().BoolP("stdout", "s", false, "Print to stdout")
 	installCmd.Flags().BoolP("wait", "w", false, "Wait for crd to show up")
 }
