@@ -2,3 +2,5 @@ tasty-darwin-amd64
 tasty-linux-amd64
 kubectl-olm
 oc-olm
+.vscode
+.idea
