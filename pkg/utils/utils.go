@@ -153,7 +153,7 @@ func WaitCrd(crd string, timeout int) {
 }
 
 func GetOperator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string) {
-	target_namespace = strings.Split(operator, "-operator")[0]
+	target_namespace = "openshift-" + strings.Split(operator, "-operator")[0]
 	dynamic := GetDynamicClient()
 	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 	operatorinfo, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
