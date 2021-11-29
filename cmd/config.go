@@ -16,12 +16,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
@@ -62,23 +62,25 @@ func init() {
 	// configCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func enableAsPlugin(execPath, execFile string) error {
-	fmt.Println("Installing tasty as kubectl and oc CLI plugin")
+func enableAsPlugin(execPath, execFile string) {
+	var found bool
+	color.Cyan("Installing tasty as kubectl and oc CLI plugin")
 
 	execOcLink := execPath + "/oc-olm"
 	err := os.Symlink(execFile, execOcLink)
 	if err != nil {
-		log.Print("Plugin already installed.")
-		return err
+		color.Yellow("Oc Plugin already installed.")
+		found = true
 	}
 
 	execKubectlLink := execPath + "/kubectl-olm"
 	err = os.Symlink(execFile, execKubectlLink)
 	if err != nil {
-		log.Print("Plugin already installed.")
-		return err
+		color.Yellow("Kubectl Plugin already installed.")
+		found = true
 	}
-	// TODO: check if tasty is in a valid $PATH and if not, add the symlink to one in $PATH
-	fmt.Println("Tasty already installed as oc and kubectl plugin, you can try oc olm --help or kubeclt olm --help")
-	return nil
+	if found {
+		// TODO: check if tasty is in a valid $PATH and if not, add the symlink to one in $PATH
+		color.Cyan("Tasty already installed as oc and kubectl plugin, you can try oc olm --help or kubeclt olm --help")
+	}
 }
