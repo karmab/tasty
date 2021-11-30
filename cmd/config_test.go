@@ -22,10 +22,7 @@ func TestConfig(t *testing.T) {
 	}
 
 	// Run enableAsPlugin function
-	err = enableAsPlugin(execPath, execFile)
-	if err != nil {
-		t.Fatalf("Error enabling as plugin: %s", err)
-	}
+	enableAsPlugin(execPath, execFile)
 
 	contentTempPaths, err := ioutil.ReadDir(execPath)
 	if err != nil {

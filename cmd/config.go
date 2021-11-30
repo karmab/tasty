@@ -18,8 +18,10 @@ package cmd
 import (
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -28,20 +30,25 @@ import (
 // configCmd represents the config command
 var configCmd = &cobra.Command{
 	Use:   "config",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "This options allow to perform configuration of tasty itself",
+	Long: `This options allow to perform configuration of tasty itself. For example: you can install 
+	tasty as kubectl and oc plugin.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		enablePlugin, _ := cmd.Flags().GetBool("enable-as-plugin")
+
 		_, execFile := path.Split(os.Args[0])
-		execPath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+
+		filePath, err := exec.LookPath(execFile)
+		if err != nil {
+			color.Red("it is required to install tasty within a path that is in your $PATH environment variable")
+			log.Fatalf("%s", err)
+		}
+
+		execPath, err := filepath.Abs(filepath.Dir(filePath))
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		if enablePlugin {
 			enableAsPlugin(execPath, execFile)
 		}
@@ -63,24 +70,34 @@ func init() {
 }
 
 func enableAsPlugin(execPath, execFile string) {
+
 	var found bool
 	color.Cyan("Installing tasty as kubectl and oc CLI plugin")
 
 	execOcLink := execPath + "/oc-olm"
 	err := os.Symlink(execFile, execOcLink)
 	if err != nil {
-		color.Yellow("Oc Plugin already installed.")
-		found = true
+		if strings.Contains(err.Error(), "file exists") {
+			color.Yellow("Oc Plugin already installed.")
+			found = true
+		} else {
+			log.Fatal(err)
+		}
 	}
 
 	execKubectlLink := execPath + "/kubectl-olm"
 	err = os.Symlink(execFile, execKubectlLink)
 	if err != nil {
-		color.Yellow("Kubectl Plugin already installed.")
-		found = true
+		if strings.Contains(err.Error(), "file exists") {
+			color.Yellow("Kubectl Plugin already installed.")
+			found = true
+		} else {
+			log.Fatal(err)
+		}
 	}
-	if found {
-		// TODO: check if tasty is in a valid $PATH and if not, add the symlink to one in $PATH
-		color.Cyan("Tasty already installed as oc and kubectl plugin, you can try oc olm --help or kubeclt olm --help")
+
+	if !found {
+		color.Green("Tasty installed successfully as oc and kubectl plugin")
 	}
+
 }
