@@ -153,6 +153,7 @@ func WaitCrd(crd string, timeout int) {
 }
 
 func GetOperator(operator string) (source string, defaultchannel string, csv string, description string, target_namespace string, channels []string, crd string) {
+	own := true
 	target_namespace = "openshift-" + strings.Split(operator, "-operator")[0]
 	dynamic := GetDynamicClient()
 	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
@@ -177,11 +178,14 @@ func GetOperator(operator string) (source string, defaultchannel string, csv str
 				modemap, _ := mode.(map[string]interface{})
 				if modemap["type"] == "OwnNamespace" && modemap["supported"] == false {
 					target_namespace = "openshift-operators"
+					own = false
 				}
 			}
 			csvdescannotations := csvdescmap["annotations"].(map[string]interface{})
 			if suggested_namespace, ok := csvdescannotations["operatorframework.io/suggested-namespace"].(string); ok {
-				target_namespace = suggested_namespace
+				if own {
+					target_namespace = suggested_namespace
+				}
 			}
 			if customresourcedefinitionsmap, ok := csvdescmap["customresourcedefinitions"]; ok {
 				customresourcedefinitions, _ := customresourcedefinitionsmap.(map[string]interface{})
