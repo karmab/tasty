@@ -17,7 +17,7 @@ This repo provides a basic tool to interact with olm in a package manager way:
 ## Installing
 
 ```
-curl -s -L https://github.com/karmab/tasty/releases/download/v0.4.0/tasty-linux-amd64 > /usr/bin/tasty
+curl -s -L https://github.com/karmab/tasty/releases/latest/download/tasty-linux-amd64 > /usr/bin/tasty
 chmod u+x /usr/bin/tasty
 ```
 
