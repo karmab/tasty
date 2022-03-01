@@ -16,9 +16,33 @@ limitations under the License.
 package main
 
 import (
+	"github.com/TwiN/go-color"
+	"github.com/spf13/cobra"
+	"log"
+	"os"
 	"tasty/cmd"
 )
 
 func main() {
-	cmd.Execute()
+	command := newCommand()
+	if err := command.Execute(); err != nil {
+		log.Fatalf(color.InRed("[ERROR] %s"), err.Error())
+	}
+}
+
+func newCommand() *cobra.Command {
+	c := &cobra.Command{
+		Use:   "tasty",
+		Short: "This application allows you to interact with olm operators\n using a yum-like workflow",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+			os.Exit(1)
+		},
+	}
+
+	c.AddCommand(cmd.NewConfig())
+	c.AddCommand(cmd.NewInfo())
+	c.AddCommand(cmd.NewSearch())
+
+	return c
 }

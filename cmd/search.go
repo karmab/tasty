@@ -16,43 +16,19 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
-	"fmt"
-	"log"
-	"strings"
-	"tasty/pkg/utils"
-
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"tasty/pkg/operator"
 )
 
-// searchCmd represents the search command
-var searchCmd = &cobra.Command{
-	Use:   "search",
-	Short: "Search matching operators",
-	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		var operator string
-		var currentoperator string
-		if len(args) != 1 {
-			log.Printf("Usage: tasty search OPERATOR_NAME")
-		} else {
-			operator = args[0]
-		}
-		dynamic := utils.GetDynamicClient()
-		packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
-		list, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").List(context.TODO(), metav1.ListOptions{})
-		utils.Check(err)
-		for _, d := range list.Items {
-			currentoperator = d.GetName()
-			if strings.Contains(currentoperator, operator) {
-				fmt.Println(currentoperator)
-			}
-		}
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(searchCmd)
+func NewSearch() *cobra.Command {
+	var o *operator.Operator
+	cmd := &cobra.Command{
+		Use:   "search",
+		Short: "Search matching operators",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o = operator.NewOperator()
+			return o.SearchOperator(args)
+		},
+	}
+	return cmd
 }

@@ -3,6 +3,7 @@ module tasty
 go 1.16
 
 require (
+	github.com/TwiN/go-color v1.1.0
 	github.com/fatih/color v1.13.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect

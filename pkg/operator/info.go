@@ -1,0 +1,84 @@
+package operator
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"github.com/fatih/color"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"log"
+	"strings"
+	"tasty/pkg/utils"
+)
+
+func (o *Operator) GetInfo(args []string) error {
+	if len(args) != 1 {
+		log.Printf("Usage: tasty info OPERATOR_NAME")
+		return errors.New("Invalid number of arguments. Usage: tasty info OPERATOR_NAME")
+	}
+
+	o.GetOperator(args[0])
+
+	color.Cyan("Providing information on operator %s", args[0])
+	fmt.Println("source: ", o.Source)
+	fmt.Println("channels: ", o.Channels)
+	fmt.Println("defaultchannel: ", o.DefaultChannel)
+	fmt.Println("target namespace: ", o.Namespace)
+	fmt.Println("csv: ", o.Csv)
+	fmt.Println("description: ", o.Description)
+	return nil
+}
+
+func (o *Operator) GetOperator(operator string) {
+	own := true
+	o.Namespace = "openshift-" + strings.Split(operator, "-operator")[0]
+
+	dynamic := utils.GetDynamicClient()
+	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
+	operatorinfo, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
+	utils.Check(err)
+
+	o.Source, _, err = unstructured.NestedString(operatorinfo.Object, "status", "catalogSource")
+	utils.Check(err)
+
+	o.DefaultChannel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
+	utils.Check(err)
+
+	allchannels, _, err := unstructured.NestedSlice(operatorinfo.Object, "status", "channels")
+	utils.Check(err)
+	for _, channel := range allchannels {
+		channelmap, _ := channel.(map[string]interface{})
+		channelname := channelmap["name"]
+		o.Channels = append(o.Channels, channelname.(string))
+		if channelname == o.DefaultChannel {
+			o.Csv = channelmap["currentCSV"].(string)
+			csvdescmap, _ := channelmap["currentCSVDesc"].(map[string]interface{})
+			o.Description = csvdescmap["description"].(string)
+			installmodes := csvdescmap["installModes"].([]interface{})
+			for _, mode := range installmodes {
+				modemap, _ := mode.(map[string]interface{})
+				if modemap["type"] == "OwnNamespace" && modemap["supported"] == false {
+					o.Namespace = "openshift-operators"
+					own = false
+				}
+			}
+			csvdescannotations := csvdescmap["annotations"].(map[string]interface{})
+			if suggested_namespace, ok := csvdescannotations["operatorframework.io/suggested-namespace"].(string); ok {
+				if own {
+					o.Namespace = suggested_namespace
+				}
+			}
+			if customresourcedefinitionsmap, ok := csvdescmap["customresourcedefinitions"]; ok {
+				customresourcedefinitions, _ := customresourcedefinitionsmap.(map[string]interface{})
+				ownedlistmap := customresourcedefinitions["owned"]
+				if ownedlistmap != nil {
+					ownedlist := ownedlistmap.([]interface{})
+					owned := ownedlist[0].(map[string]interface{})
+					o.Crd = owned["name"].(string)
+				}
+			}
+		}
+	}
+}

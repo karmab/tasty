@@ -1,4 +1,4 @@
-package cmd
+package operator
 
 import (
 	"io/ioutil"
@@ -22,7 +22,11 @@ func TestConfig(t *testing.T) {
 	}
 
 	// Run enableAsPlugin function
-	enableAsPlugin(execPath, execFile)
+	o := &Operator{
+		ConfigExecPath: execPath,
+		ConfigExecFile: execFile,
+	}
+	o.enableAsPlugin()
 
 	contentTempPaths, err := ioutil.ReadDir(execPath)
 	if err != nil {
