@@ -12,9 +12,6 @@ func TestConfig(t *testing.T) {
 	execFile := "tasty"
 	execPath := "/tmp/tasty"
 	err := os.Mkdir(execPath, 0777)
-	if err != nil {
-		t.Fatalf("Error creating testFolder: %s", err)
-	}
 
 	_, err = os.Create(execPath + "/" + execFile)
 	if err != nil {

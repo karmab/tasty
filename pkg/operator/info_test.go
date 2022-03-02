@@ -7,34 +7,24 @@ import (
 )
 
 func TestInfo(t *testing.T) {
-	t.Log("TODO: Implement TestInfo")
-	prueba := Operator{
-		Name:           "",
-		Source:         "",
-		DefaultChannel: "",
-		Description:    "",
-		Csv:            "",
-		Namespace:      "",
-		Channels:       nil,
-		Crd:            "",
-		ConfigExecFile: "",
-		ConfigExecPath: "",
-	}
-	err := prueba.GetInfo([]string{""})
+	t.Log("Test info Operator found")
+	operatorOK := NewOperator()
+	err := operatorOK.GetInfo([]string{"web-terminal"})
+	assert.NoError(t, err)
+
+	t.Log("Test info without Operator")
+	operatorEmpty := NewOperator()
+	err = operatorEmpty.GetInfo([]string{""})
 	assert.Error(t, err)
 
-	prueba2 := Operator{
-		Name:           "",
-		Source:         "",
-		DefaultChannel: "",
-		Description:    "",
-		Csv:            "",
-		Namespace:      "",
-		Channels:       nil,
-		Crd:            "",
-		ConfigExecFile: "",
-		ConfigExecPath: "",
-	}
-	prueba2.GetInfo([]string{""})
+	t.Log("Test info without params")
+	operatorWithOutParam := NewOperator()
+	err = operatorWithOutParam.GetInfo([]string{})
+	assert.Error(t, err)
+
+	t.Log("Test info Operator not found")
+	operatorNotFound := NewOperator()
+	err = operatorNotFound.GetInfo([]string{"xxx"})
+	assert.Error(t, err)
 
 }
