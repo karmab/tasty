@@ -16,9 +16,7 @@ limitations under the License.
 package main
 
 import (
-	"github.com/TwiN/go-color"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
 	"tasty/cmd"
 )
@@ -26,7 +24,7 @@ import (
 func main() {
 	command := newCommand()
 	if err := command.Execute(); err != nil {
-		log.Fatalf(color.InRed("[ERROR] %s"), err.Error())
+		os.Exit(1)
 	}
 }
 
@@ -40,9 +38,12 @@ func newCommand() *cobra.Command {
 		},
 	}
 
-	c.AddCommand(cmd.NewConfig())
+	c.AddCommand(cmd.NewConfigurer())
 	c.AddCommand(cmd.NewInfo())
-	c.AddCommand(cmd.NewSearch())
+	c.AddCommand(cmd.NewSearcher())
+	c.AddCommand(cmd.NewLister())
+	c.AddCommand(cmd.NewRemover())
+	c.AddCommand(cmd.NewInstaller())
 
 	return c
 }

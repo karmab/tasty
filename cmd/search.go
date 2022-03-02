@@ -20,7 +20,7 @@ import (
 	"tasty/pkg/operator"
 )
 
-func NewSearch() *cobra.Command {
+func NewSearcher() *cobra.Command {
 	var o *operator.Operator
 	cmd := &cobra.Command{
 		Use:   "search",

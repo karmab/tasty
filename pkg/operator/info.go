@@ -8,18 +8,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"log"
 	"strings"
 	"tasty/pkg/utils"
 )
 
 func (o *Operator) GetInfo(args []string) error {
 	if len(args) != 1 {
-		log.Printf("Usage: tasty info OPERATOR_NAME")
 		return errors.New("Invalid number of arguments. Usage: tasty info OPERATOR_NAME")
 	}
 
-	o.GetOperator(args[0])
+	err := o.GetOperator(args[0])
+	if err != nil {
+		return err
+	}
 
 	color.Cyan("Providing information on operator %s", args[0])
 	fmt.Println("source: ", o.Source)
@@ -31,23 +32,32 @@ func (o *Operator) GetInfo(args []string) error {
 	return nil
 }
 
-func (o *Operator) GetOperator(operator string) {
+func (o *Operator) GetOperator(operator string) error {
 	own := true
 	o.Namespace = "openshift-" + strings.Split(operator, "-operator")[0]
 
 	dynamic := utils.GetDynamicClient()
 	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 	operatorinfo, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
-	utils.Check(err)
+	if err != nil {
+		return err
+	}
 
 	o.Source, _, err = unstructured.NestedString(operatorinfo.Object, "status", "catalogSource")
-	utils.Check(err)
+	if err != nil {
+		return err
+	}
 
 	o.DefaultChannel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
-	utils.Check(err)
+	if err != nil {
+		return err
+	}
 
 	allchannels, _, err := unstructured.NestedSlice(operatorinfo.Object, "status", "channels")
-	utils.Check(err)
+	if err != nil {
+		return err
+	}
+
 	for _, channel := range allchannels {
 		channelmap, _ := channel.(map[string]interface{})
 		channelname := channelmap["name"]
@@ -81,4 +91,5 @@ func (o *Operator) GetOperator(operator string) {
 			}
 		}
 	}
+	return nil
 }

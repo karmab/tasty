@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewConfig() *cobra.Command {
+func NewConfigurer() *cobra.Command {
 	var o *operator.Operator
 	cmd := &cobra.Command{
 		Use:   "config",

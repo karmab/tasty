@@ -74,3 +74,7 @@ spec:
   source: {{ .Source }}
   sourceNamespace: openshift-marketplace
 `
+
+func GetOperatorTemplate() string {
+	return OperatorTemplate
+}

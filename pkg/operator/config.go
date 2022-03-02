@@ -20,11 +20,13 @@ func (o *Operator) NewConfiguration(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		color.Red("it is required to install tasty within a path that is in your $PATH environment variable")
 		log.Fatalf("%s", err)
+		return err
 	}
 
 	execPath, err := filepath.Abs(filepath.Dir(filePath))
 	if err != nil {
 		log.Fatal(err)
+		return err
 	}
 
 	o.ConfigExecPath = execPath
