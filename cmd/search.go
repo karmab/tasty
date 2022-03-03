@@ -16,15 +16,17 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"tasty/pkg/operator"
+
+	"github.com/spf13/cobra"
 )
 
 func NewSearcher() *cobra.Command {
 	var o *operator.Operator
 	cmd := &cobra.Command{
-		Use:   "search",
-		Short: "Search matching operators",
+		Use:          "search",
+		Short:        "Search matching operators",
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
 			return o.SearchOperator(args)
