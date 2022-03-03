@@ -21,6 +21,13 @@ curl -s -L https://github.com/karmab/tasty/releases/latest/download/tasty-linux-
 chmod u+x /usr/bin/tasty
 ```
 
+## Requirements
+
+Kubeconfig environment variable must be set.
+```
+export KUBECONFIG=/path/to/kubeconfig
+```
+
 ##  Running as kubelet and oc plugin
 
 Run the following and you can then use `kubectl olm` or `oc olm`

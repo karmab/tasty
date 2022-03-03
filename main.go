@@ -16,9 +16,34 @@ limitations under the License.
 package main
 
 import (
+	"github.com/spf13/cobra"
+	"os"
 	"tasty/cmd"
 )
 
 func main() {
-	cmd.Execute()
+	command := newCommand()
+	if err := command.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func newCommand() *cobra.Command {
+	c := &cobra.Command{
+		Use:   "tasty",
+		Short: "This application allows you to interact with olm operators\n using a yum-like workflow",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+			os.Exit(1)
+		},
+	}
+
+	c.AddCommand(cmd.NewConfigurer())
+	c.AddCommand(cmd.NewInfo())
+	c.AddCommand(cmd.NewSearcher())
+	c.AddCommand(cmd.NewLister())
+	c.AddCommand(cmd.NewRemover())
+	c.AddCommand(cmd.NewInstaller())
+
+	return c
 }

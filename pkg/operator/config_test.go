@@ -1,4 +1,4 @@
-package cmd
+package operator
 
 import (
 	"io/ioutil"
@@ -12,9 +12,6 @@ func TestConfig(t *testing.T) {
 	execFile := "tasty"
 	execPath := "/tmp/tasty"
 	err := os.Mkdir(execPath, 0777)
-	if err != nil {
-		t.Fatalf("Error creating testFolder: %s", err)
-	}
 
 	_, err = os.Create(execPath + "/" + execFile)
 	if err != nil {
@@ -22,7 +19,11 @@ func TestConfig(t *testing.T) {
 	}
 
 	// Run enableAsPlugin function
-	enableAsPlugin(execPath, execFile)
+	o := &Operator{
+		ConfigExecPath: execPath,
+		ConfigExecFile: execFile,
+	}
+	o.enableAsPlugin()
 
 	contentTempPaths, err := ioutil.ReadDir(execPath)
 	if err != nil {

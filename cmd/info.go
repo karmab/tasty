@@ -16,43 +16,26 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"log"
+	"tasty/pkg/operator"
 
-	"tasty/pkg/utils"
-
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 
-// infoCmd represents the info command
-var infoCmd = &cobra.Command{
-	Use:   "info",
-	Short: "Provides information about specified operator",
-	Long: `A longer description that spans multiple lines and likely contains examples
+func NewInfo() *cobra.Command {
+	var o *operator.Operator
+	cmd := &cobra.Command{
+		Use:   "info",
+		Short: "Provides information about specified operator",
+		Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		var operator string
-		if len(args) != 1 {
-			log.Printf("Usage: tasty info OPERATOR_NAME")
-		} else {
-			operator = args[0]
-		}
-		source, defaultchannel, csv, description, target_namespace, channels, _ := utils.GetOperator(operator)
-		color.Cyan("Providing information on operator %s", operator)
-		fmt.Println("source: ", source)
-		fmt.Println("channels: ", channels)
-		fmt.Println("defaultchannel: ", defaultchannel)
-		fmt.Println("target namespace: ", target_namespace)
-		fmt.Println("csv: ", csv)
-		fmt.Println("description: ", description)
-	},
-}
-
-func init() {
-	rootCmd.AddCommand(infoCmd)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o = operator.NewOperator()
+			return o.GetInfo(args)
+		},
+	}
+	return cmd
 }
