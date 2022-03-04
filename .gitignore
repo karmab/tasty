@@ -7,6 +7,7 @@
 vendor/
 
 ### Others ###
+bin
 tasty*
-kubectl-olm
 oc-olm
+kubectl-olm
