@@ -28,13 +28,13 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 				o.DefaultChannel = channel
 			} else {
 				color.Red("Target channel %s not found in %s", channel, o.Channels)
-				return errors.New("Target channel not found")
+				return errors.New("target channel not found")
 			}
 		}
 		if ns == "" {
 			ns = o.Namespace
 		}
-		if out == true {
+		if out {
 			t := template.New("Template")
 			tpl, err := t.Parse(GetOperatorTemplate())
 			if err != nil {
@@ -119,7 +119,7 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 				log.Printf("Error creating subscription %s: %s", operator, err)
 				return err
 			}
-			if wait == true && o.Crd != "" {
+			if wait && o.Crd != "" {
 				utils.WaitCrd(o.Crd, 60)
 			}
 		}

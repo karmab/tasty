@@ -1,3 +1,4 @@
+// Package cmd
 /*
 Copyright © 2021 NAME HERE <EMAIL ADDRESS>
 
@@ -16,10 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-
 	"github.com/karmab/tasty/pkg/operator"
-
-
 	"github.com/spf13/cobra"
 )
 
@@ -39,6 +37,6 @@ func NewConfigurer() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.BoolP("enable-as-plugin", "p", false, "Install as kubeclt and oc plugin")
+	flags.BoolP("enable-as-plugin", "p", false, "Install as kubectl and oc plugin")
 	return cmd
 }

@@ -13,13 +13,15 @@ import (
 
 func (o *Operator) RemoveOperator(remove bool, args []string) error {
 
-	if remove != true {
+	if remove {
 		var confirmation string
 		color.Green("Are you sure? [y/N]:")
-		fmt.Scanln(&confirmation)
+		if _, err := fmt.Scanln(&confirmation); err != nil {
+			fmt.Printf("Failed to scan confirmation with %s\n", err)
+		}
 		if strings.ToLower(confirmation) != "y" {
 			color.Red("Leaving..")
-			return errors.New("Leaving..")
+			return errors.New("leaving")
 		}
 	}
 	subscriptionsGVR := schema.GroupVersionResource{

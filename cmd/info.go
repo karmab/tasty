@@ -1,3 +1,4 @@
+// Package cmd
 /*
 Copyright © 2021 NAME HERE <EMAIL ADDRESS>
 
@@ -17,7 +18,6 @@ package cmd
 
 import (
 	"github.com/karmab/tasty/pkg/operator"
-
 
 	"github.com/spf13/cobra"
 )
