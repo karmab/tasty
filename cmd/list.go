@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"tasty/pkg/operator"
+	"github.com/karmab/tasty/pkg/operator"
 
 	"github.com/spf13/cobra"
 )
@@ -33,6 +33,7 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
+
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()

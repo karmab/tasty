@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/fatih/color"
+	"github.com/karmab/tasty/pkg/utils"
 	"html/template"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"os"
-	"tasty/pkg/utils"
 )
 
 func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel string, args []string) error {

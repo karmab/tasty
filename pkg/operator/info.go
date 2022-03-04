@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"tasty/pkg/utils"
-
 	"github.com/fatih/color"
+	"github.com/karmab/tasty/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"strings"
 )
 
 func (o *Operator) GetInfo(args []string) error {
