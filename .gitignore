@@ -1,6 +1,12 @@
-tasty-darwin-amd64
-tasty-linux-amd64
+### JetBrains ###
+.idea/
+
+### VisualStudioCode ###
+.vscode/*
+.history
+vendor/
+
+### Others ###
+tasty*
 kubectl-olm
 oc-olm
-.vscode
-.idea
