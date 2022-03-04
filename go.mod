@@ -1,4 +1,4 @@
-module tasty
+module github.com/karmab/tasty
 
 go 1.16
 
