@@ -16,8 +16,8 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/karmab/tasty/pkg/operator"
 	"github.com/spf13/cobra"
-	"tasty/pkg/operator"
 )
 
 func NewSearcher() *cobra.Command {

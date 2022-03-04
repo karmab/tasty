@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"tasty/pkg/operator"
+	"github.com/karmab/tasty/pkg/operator"
 
 	"github.com/spf13/cobra"
 )

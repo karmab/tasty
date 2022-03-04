@@ -16,9 +16,9 @@ limitations under the License.
 package main
 
 import (
+	"github.com/karmab/tasty/cmd"
 	"github.com/spf13/cobra"
 	"os"
-	"tasty/cmd"
 )
 
 func main() {

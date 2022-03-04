@@ -3,11 +3,11 @@ package operator
 import (
 	"context"
 	"fmt"
+	"github.com/karmab/tasty/pkg/utils"
 	"github.com/syohex/go-texttable"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sort"
-	"tasty/pkg/utils"
 )
 
 func (o *Operator) GetList(installed bool) error {

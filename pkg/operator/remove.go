@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/karmab/tasty/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
-	"tasty/pkg/utils"
 )
 
 func (o *Operator) RemoveOperator(remove bool, args []string) error {
