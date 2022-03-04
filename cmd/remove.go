@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"github.com/karmab/tasty/pkg/operator"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +25,10 @@ func NewRemover() *cobra.Command {
 	var o *operator.Operator
 	var removed bool
 	cmd := &cobra.Command{
-		Use:   "remove",
-		Short: "Remove Operator",
-		Long:  `Remove Operators`,
+		Use:          "remove",
+		Short:        "Remove Operator",
+		Long:         `Remove Operators`,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
 			return o.RemoveOperator(removed, args)

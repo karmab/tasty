@@ -25,9 +25,10 @@ func NewInstaller() *cobra.Command {
 	var wait, out bool
 	var ns, ch string
 	cmd := &cobra.Command{
-		Use:   "install [operator]",
-		Short: "install operators",
-		Long:  `install operators`,
+		Use:          "install [operator]",
+		Short:        "install operators",
+		Long:         `install operators`,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
 			return o.InstallOperator(wait, out, ns, ch, args)

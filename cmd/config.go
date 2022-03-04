@@ -16,7 +16,9 @@ limitations under the License.
 package cmd
 
 import (
+
 	"github.com/karmab/tasty/pkg/operator"
+
 
 	"github.com/spf13/cobra"
 )
@@ -28,6 +30,8 @@ func NewConfigurer() *cobra.Command {
 		Short: "This options allow to perform configuration of tasty itself",
 		Long: `This options allow to perform configuration of tasty itself. For example: you can install 
 	tasty as kubectl and oc plugin.`,
+
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
 			return o.NewConfiguration(cmd, args)

@@ -14,11 +14,13 @@ import (
 
 func (o *Operator) GetInfo(args []string) error {
 	if len(args) != 1 {
+		color.Set(color.FgRed)
 		return errors.New("Invalid number of arguments. Usage: tasty info OPERATOR_NAME")
 	}
 
 	err := o.GetOperator(args[0])
 	if err != nil {
+		color.Set(color.FgRed)
 		return err
 	}
 
@@ -40,21 +42,25 @@ func (o *Operator) GetOperator(operator string) error {
 	packagemanifests := schema.GroupVersionResource{Group: "packages.operators.coreos.com", Version: "v1", Resource: "packagemanifests"}
 	operatorinfo, err := dynamic.Resource(packagemanifests).Namespace("openshift-marketplace").Get(context.TODO(), operator, metav1.GetOptions{})
 	if err != nil {
+		color.Set(color.FgRed)
 		return err
 	}
 
 	o.Source, _, err = unstructured.NestedString(operatorinfo.Object, "status", "catalogSource")
 	if err != nil {
+		color.Set(color.FgRed)
 		return err
 	}
 
 	o.DefaultChannel, _, err = unstructured.NestedString(operatorinfo.Object, "status", "defaultChannel")
 	if err != nil {
+		color.Set(color.FgRed)
 		return err
 	}
 
 	allchannels, _, err := unstructured.NestedSlice(operatorinfo.Object, "status", "channels")
 	if err != nil {
+		color.Set(color.FgRed)
 		return err
 	}
 
