@@ -25,6 +25,7 @@ func NewInstaller() *cobra.Command {
 	var o *operator.Operator
 	var wait, out bool
 	var ns, ch string
+	var csv, installPlan string
 	cmd := &cobra.Command{
 		Use:          "install [operator]",
 		Short:        "install operators",
@@ -32,7 +33,7 @@ func NewInstaller() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
-			return o.InstallOperator(wait, out, ns, ch, args)
+			return o.InstallOperator(wait, out, ns, ch, csv, installPlan, args)
 		},
 	}
 	flags := cmd.Flags()
@@ -40,6 +41,8 @@ func NewInstaller() *cobra.Command {
 	flags.BoolVarP(&out, "stdout", "s", false, "Print to stdout")
 	flags.StringVarP(&ns, "namespace", "n", "", "Target namespace")
 	flags.StringVarP(&ch, "channel", "c", "", "Target channel")
+	flags.StringVarP(&csv, "csv", "", "", "Custom csv")
+	flags.StringVarP(&installPlan, "installplan", "", "", "installPlan")
 
 	return cmd
 }

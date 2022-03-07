@@ -73,6 +73,8 @@ spec:
   name: {{ .Name }}
   source: {{ .Source }}
   sourceNamespace: openshift-marketplace
+  startingCSV: {{ .Csv }}
+  installPlanApproval: Automatic
 `
 
 func GetOperatorTemplate() string {
