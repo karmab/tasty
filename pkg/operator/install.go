@@ -3,15 +3,16 @@ package operator
 import (
 	"context"
 	"errors"
+	"html/template"
+	"log"
+	"os"
+
 	"github.com/fatih/color"
 	"github.com/karmab/tasty/pkg/utils"
-	"html/template"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"log"
-	"os"
 )
 
 func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel string, args []string) error {
@@ -107,7 +108,7 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 						"namespace": ns,
 					},
 					"spec": map[string]interface{}{
-						"channel":         channel,
+						"channel":         o.DefaultChannel,
 						"name":            operator,
 						"source":          o.Source,
 						"sourceNamespace": "openshift-marketplace",
