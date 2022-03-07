@@ -8,7 +8,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sort"
-
 )
 
 func (o *Operator) GetList(installed bool) error {
@@ -39,9 +38,13 @@ func (o *Operator) GetList(installed bool) error {
 	}
 	sort.Strings(operators)
 	operatortable := &texttable.TextTable{}
-	operatortable.SetHeader("Name")
+	if err := operatortable.SetHeader("Name"); err != nil {
+		fmt.Printf("Failed to set header with %s\n", err)
+	}
 	for _, operator := range operators {
-		operatortable.AddRow(operator)
+		if err := operatortable.AddRow(operator); err != nil {
+			fmt.Printf("Failed to add a row with %s\n", err)
+		}
 	}
 	fmt.Println(operatortable.Draw())
 	return nil

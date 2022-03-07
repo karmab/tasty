@@ -16,6 +16,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"github.com/karmab/tasty/cmd"
 	"github.com/spf13/cobra"
 	"os"
@@ -33,7 +34,10 @@ func newCommand() *cobra.Command {
 		Use:   "tasty",
 		Short: "This application allows you to interact with olm operators\n using a yum-like workflow",
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Help()
+			if err := cmd.Help(); err != nil {
+				fmt.Printf("Error when printing the Help message")
+				os.Exit(1)
+			}
 			os.Exit(1)
 		},
 	}

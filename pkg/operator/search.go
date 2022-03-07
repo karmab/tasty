@@ -14,7 +14,7 @@ func (o *Operator) SearchOperator(args []string) error {
 	var currentoperator string
 
 	if len(args) != 1 {
-		return errors.New("Invalid number of arguments. Usage: tasty search OPERATOR_NAME")
+		return errors.New("invalid number of arguments. Usage: tasty search OPERATOR_NAME")
 	}
 
 	dynamic := utils.GetDynamicClient()

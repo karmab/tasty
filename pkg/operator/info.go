@@ -15,7 +15,7 @@ import (
 func (o *Operator) GetInfo(args []string) error {
 	if len(args) != 1 {
 		color.Set(color.FgRed)
-		return errors.New("Invalid number of arguments. Usage: tasty info OPERATOR_NAME")
+		return errors.New("invalid number of arguments. Usage: tasty info OPERATOR_NAME")
 	}
 
 	err := o.GetOperator(args[0])
@@ -81,9 +81,9 @@ func (o *Operator) GetOperator(operator string) error {
 				}
 			}
 			csvdescannotations := csvdescmap["annotations"].(map[string]interface{})
-			if suggested_namespace, ok := csvdescannotations["operatorframework.io/suggested-namespace"].(string); ok {
+			if suggestedNamespace, ok := csvdescannotations["operatorframework.io/suggested-namespace"].(string); ok {
 				if own {
-					o.Namespace = suggested_namespace
+					o.Namespace = suggestedNamespace
 				}
 			}
 			if customresourcedefinitionsmap, ok := csvdescmap["customresourcedefinitions"]; ok {
