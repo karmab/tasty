@@ -25,10 +25,13 @@ chmod u+x /usr/bin/tasty
 
 ## Requirements
 
-Kubeconfig environment variable must be set.
+Kubeconfig environment variable must be set
+
 ```
 export KUBECONFIG=/path/to/kubeconfig
 ```
+
+Alternatively, you can rely on your `~/.kube/config`
 
 ##  Running as kubelet and oc plugin
 
