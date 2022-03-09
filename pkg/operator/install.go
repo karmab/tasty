@@ -15,7 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel string, args []string) error {
+func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel string, csv string, installPlan string, args []string) error {
 	for _, operator := range args {
 
 		err := o.GetOperator(operator)
@@ -32,8 +32,17 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 				return errors.New("target channel not found")
 			}
 		}
+		if csv != "" {
+			o.Csv = csv
+		}
 		if ns == "" {
 			ns = o.Namespace
+		}
+		if installPlan == "" {
+			installPlan = "Automatic"
+		} else if installPlan != "Manual" && installPlan != "Automatic" {
+			color.Red("Invalid installplan %s", installPlan)
+			return errors.New("invalid installplan")
 		}
 		if out {
 			t := template.New("Template")
@@ -108,10 +117,12 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 						"namespace": ns,
 					},
 					"spec": map[string]interface{}{
-						"channel":         o.DefaultChannel,
-						"name":            operator,
-						"source":          o.Source,
-						"sourceNamespace": "openshift-marketplace",
+						"channel":             o.DefaultChannel,
+						"name":                operator,
+						"source":              o.Source,
+						"sourceNamespace":     "openshift-marketplace",
+						"startingCSV":         o.Csv,
+						"installPlanApproval": installPlan,
 					},
 				},
 			}
