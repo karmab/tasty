@@ -1,20 +1,22 @@
 # Tasty repository
 
-Tasty is a CLI to handle with operators as well as you can integrate in your code to be used as a sdk to handle operators easily.
+Tasty is a CLI to handle operators in a package manager fashion.
 
-## Demo!
-
-![](tasty.gif)
-
-# Description
-
-This repo provides a basic tool to interact with olm in a package manager way:
+The tool provides the following primitives to interact with olm:
 
 - list
 - info
 - install
 - remove
 - search
+
+Additionally, it can be used as a go library
+
+As an alternative, consider [kubectl-operator](https://github.com/operator-framework/kubectl-operator)
+
+## Demo!
+
+![](tasty.gif)
 
 ## Installing
 
@@ -41,27 +43,27 @@ Run the following and you can then use `kubectl olm` or `oc olm`
 tasty config --enable-as-plugin
 ```
 
-## Use Tasty in your Code (Golang)
+## Using as a go library
 
-First of all, you need to import tasty:
+Import tasty:
 
 ```
 import "github.com/karmab/tasty/pkg/operator"
 ```
 
-Then, you need to create an operator using the constructor (empty to be filled after, or directly with the options):
+Then, create an operator using the constructor:
 
 ```
 o := operator.NewOperator()
 ```
 
-or with options directly:
+or with specific options:
 
 ```
 o := operator.NewOperatorWithOptions(name, source, defaultChannel, description, csv, namespace, crd, configExecFile, configExecPath string)
 ```
 
-Now you could use the next functions to manage the operator:
+The following methods are available to manage the operator:
 
 ```
 o.SearchOperator()
