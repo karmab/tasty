@@ -22,3 +22,4 @@ release: fmt vet lint
 	env GOOS=darwin GOARCH=arm64 go build -o bin/tasty-darwin-arm64
 	env GOOS=linux GOARCH=amd64 go build -o bin/tasty-linux-amd64 ; go build -o bin/tasty-linux-x86_64
 	env GOOS=linux GOARCH=arm64 go build -o bin/tasty-linux-arm64 ; go build -o bin/tasty-linux-aarch64
+	env GOOS=linux GOARCH=ppc64le go build -o bin/tasty-linux-ppc64le
