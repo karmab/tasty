@@ -100,7 +100,7 @@ func WaitCrd(crd string, timeout int) {
 		list, err := d.Resource(crds).Namespace("").List(context.TODO(), metav1.ListOptions{})
 		Check(err)
 		for _, d := range list.Items {
-			if d.GetName() == crd {
+			if d.GetName() == strings.ToLower(crd) {
 				return
 			}
 		}
