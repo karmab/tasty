@@ -25,6 +25,26 @@ curl -s -L https://github.com/karmab/tasty/releases/latest/download/tasty-linux-
 chmod u+x /usr/bin/tasty
 ```
 
+### Some tasty install samples
+
+- Install OLM operators changing the sourceNamespace value
+
+```bash
+tasty install assisted-service-operator hive-operator --sourcens olm
+```
+
+- Install OLM operators changing the CatalogSource and sourceNamespace value
+
+```bash
+tasty install assisted-service-operator hive-operator --source certified-operators --sourcens olm
+```
+
+- Print yaml of OLM operator without install
+
+```bash
+tasty install assisted-service-operator
+```
+
 ## Requirements
 
 Kubeconfig environment variable must be set

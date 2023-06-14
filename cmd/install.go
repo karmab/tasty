@@ -22,10 +22,14 @@ import (
 )
 
 func NewInstaller() *cobra.Command {
-	var o *operator.Operator
-	var wait, out bool
-	var ns, ch string
-	var csv, installPlan string
+	var (
+		o                *operator.Operator
+		wait, out        bool
+		ns, ch           string
+		csv, installPlan string
+		src, srcNS       string
+	)
+
 	cmd := &cobra.Command{
 		Use:          "install [operator]",
 		Short:        "install operators",
@@ -33,7 +37,7 @@ func NewInstaller() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
-			return o.InstallOperator(wait, out, ns, ch, csv, installPlan, args)
+			return o.InstallOperator(wait, out, ns, ch, csv, src, srcNS, installPlan, args)
 		},
 	}
 	flags := cmd.Flags()
@@ -41,7 +45,9 @@ func NewInstaller() *cobra.Command {
 	flags.BoolVarP(&out, "stdout", "s", false, "Print to stdout")
 	flags.StringVarP(&ns, "namespace", "n", "", "Target namespace")
 	flags.StringVarP(&ch, "channel", "c", "", "Target channel")
-	flags.StringVarP(&csv, "csv", "", "", "Custom csv")
+	flags.StringVar(&csv, "csv", "", "Custom csv")
+	flags.StringVar(&src, "source", "community-operators", "CatalogSource to be used")
+	flags.StringVar(&srcNS, "sourcens", "openshift-marketplace", "Source namespace to grab the CatalogSource")
 	flags.StringVarP(&installPlan, "installplan", "", "", "installPlan")
 
 	return cmd
