@@ -9,13 +9,14 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/karmab/tasty/pkg/utils"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel string, csv string, installPlan string, args []string) error {
+func (o *Operator) InstallOperator(wait, out bool, ns, channel, csv, src, srcNS, installPlan string, args []string) error {
 	for _, operator := range args {
 
 		err := o.GetOperator(operator)
@@ -44,6 +45,8 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 			color.Red("Invalid installplan %s", installPlan)
 			return errors.New("invalid installplan")
 		}
+		o.Source = src
+		o.SourceNS = srcNS
 		if out {
 			t := template.New("Template")
 			tpl, err := t.Parse(GetOperatorTemplate())
@@ -54,6 +57,7 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 			operatordata := Operator{
 				Name:           operator,
 				Source:         o.Source,
+				SourceNS:       o.SourceNS,
 				DefaultChannel: o.DefaultChannel,
 				Csv:            o.Csv,
 				Namespace:      ns,
@@ -69,10 +73,22 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 			if ns != "openshift-operators" {
 				color.Cyan("Creating namespace %s", ns)
 				k8sclient := utils.GetK8sClient()
-				nsmetaSpec := metav1.ObjectMeta{Name: ns, Annotations: map[string]string{"workload.openshift.io/allowed": "management"}}
-				nsSpec := &v1.Namespace{ObjectMeta: nsmetaSpec}
-				_, err := k8sclient.CoreV1().Namespaces().Create(context.TODO(), nsSpec, metav1.CreateOptions{})
-				utils.Check(err)
+				namespace := &corev1.Namespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: ns,
+						Annotations: map[string]string{
+							"workload.openshift.io/allowed": "management",
+						},
+					},
+				}
+
+				_, err := k8sclient.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
+				if !apierrors.IsAlreadyExists(err) {
+					utils.Check(err)
+				} else {
+					color.Yellow("Namespace %s already exists, continuing...", namespace.Name)
+				}
+
 				color.Cyan("Creating operator group %s-operatorgroup", operator)
 				operatorgroupsGVR := schema.GroupVersionResource{
 					Group:    "operators.coreos.com",
@@ -95,10 +111,13 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 				}
 				_, err = dynamic.Resource(operatorgroupsGVR).Namespace(ns).Create(context.TODO(), operatorgroupspec, metav1.CreateOptions{})
 				if err != nil {
-					log.Printf("Error creating operator group %s: %s", operator+"-operatorgroup", err)
-					return err
+					if !apierrors.IsAlreadyExists(err) {
+						log.Printf("Error creating operator group %s: %s", operator+"-operatorgroup", err)
+						return err
+					} else {
+						color.Yellow("OperatorGroup %s already exists, continuing...", operatorgroupspec.GetName())
+					}
 				}
-
 			}
 
 			color.Cyan("Creating subscription %s", operator)
@@ -120,7 +139,7 @@ func (o *Operator) InstallOperator(wait bool, out bool, ns string, channel strin
 						"channel":             o.DefaultChannel,
 						"name":                operator,
 						"source":              o.Source,
-						"sourceNamespace":     "openshift-marketplace",
+						"sourceNamespace":     o.SourceNS,
 						"startingCSV":         o.Csv,
 						"installPlanApproval": installPlan,
 					},

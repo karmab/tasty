@@ -3,6 +3,7 @@ package operator
 type Operator struct {
 	Name           string
 	Source         string
+	SourceNS       string
 	DefaultChannel string
 	Description    string
 	Csv            string
@@ -17,6 +18,7 @@ func NewOperator() *Operator {
 	return &Operator{
 		Name:           "",
 		Source:         "",
+		SourceNS:       "",
 		DefaultChannel: "",
 		Description:    "",
 		Csv:            "",
@@ -28,10 +30,11 @@ func NewOperator() *Operator {
 	}
 }
 
-func NewOperatorWithOptions(name, source, defaultChannel, description, csv, namespace, crd, configExecFile, configExecPath string) *Operator {
+func NewOperatorWithOptions(name, source, sourceNS, defaultChannel, description, csv, namespace, crd, configExecFile, configExecPath string) *Operator {
 	return &Operator{
 		Name:           name,
 		Source:         source,
+		SourceNS:       sourceNS,
 		DefaultChannel: defaultChannel,
 		Description:    description,
 		Csv:            csv,
@@ -72,7 +75,7 @@ spec:
   channel: "{{ .DefaultChannel }}"
   name: {{ .Name }}
   source: {{ .Source }}
-  sourceNamespace: openshift-marketplace
+  sourceNamespace: {{ .SourceNS }}
   startingCSV: {{ .Csv }}
   installPlanApproval: Automatic
 `
