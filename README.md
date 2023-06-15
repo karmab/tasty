@@ -42,7 +42,7 @@ tasty install assisted-service-operator hive-operator --source certified-operato
 - Print yaml of OLM operator without install
 
 ```bash
-tasty install assisted-service-operator
+tasty install assisted-service-operator --stdout
 ```
 
 ## Requirements
