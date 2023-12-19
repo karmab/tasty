@@ -24,7 +24,10 @@ import (
 
 func NewRemover() *cobra.Command {
 	var o *operator.Operator
-	var removed bool
+	var (
+		removed bool
+		ns      string
+	)
 	cmd := &cobra.Command{
 		Use:          "remove",
 		Short:        "Remove Operator",
@@ -32,10 +35,11 @@ func NewRemover() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
-			return o.RemoveOperator(removed, args)
+			return o.RemoveOperator(ns, removed, args)
 		},
 	}
 	flags := cmd.Flags()
 	flags.BoolVarP(&removed, "yes", "y", false, "Confirm")
+	flags.StringVarP(&ns, "namespace", "n", "", "namespace")
 	return cmd
 }

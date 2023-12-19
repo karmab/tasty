@@ -1,33 +1,57 @@
 package operator
 
 type Operator struct {
-	Name           string
-	Source         string
-	SourceNS       string
-	DefaultChannel string
-	Description    string
-	Csv            string
-	Namespace      string
-	Channels       []string
-	Crd            string
-	ConfigExecFile string
-	ConfigExecPath string
+	Name                  string
+	Source                string
+	SourceNS              string
+	DefaultChannel        string
+	Description           string
+	Csv                   string
+	Namespace             string
+	TargetNamespaces      []string
+	SuggestedNamespace    string
+	Channels              []string
+	Crd                   string
+	ConfigExecFile        string
+	ConfigExecPath        string
+	SupportedInstallModes map[string][]string
+
+	InstalledChannel  string
+	InstalledSource   string
+	InstalledSourceNS string
+	InstalledCsv      string
 }
 
-func NewOperator() *Operator {
-	return &Operator{
-		Name:           "",
-		Source:         "",
-		SourceNS:       "",
-		DefaultChannel: "",
-		Description:    "",
-		Csv:            "",
-		Namespace:      "",
-		Channels:       []string{},
-		Crd:            "",
-		ConfigExecFile: "",
-		ConfigExecPath: "",
+func (op *Operator) GetInstallModes() (out string) {
+	for channelName, channel := range op.SupportedInstallModes {
+		out += channelName + "[ "
+		for _, mode := range channel {
+			out += mode + " "
+		}
+		out += "] "
 	}
+	return out
+}
+
+func NewOperator() (op *Operator) {
+
+	op = &Operator{
+		Name:               "",
+		Source:             "",
+		SourceNS:           "",
+		DefaultChannel:     "",
+		Description:        "",
+		Csv:                "",
+		Namespace:          "",
+		SuggestedNamespace: "",
+		TargetNamespaces:   []string{},
+		Channels:           []string{},
+		Crd:                "",
+		ConfigExecFile:     "",
+		ConfigExecPath:     "",
+	}
+	op.SupportedInstallModes = make(map[string][]string)
+	return op
 }
 
 func NewOperatorWithOptions(name, source, sourceNS, defaultChannel, description, csv, namespace, crd, configExecFile, configExecPath string) *Operator {
@@ -44,42 +68,4 @@ func NewOperatorWithOptions(name, source, sourceNS, defaultChannel, description,
 		ConfigExecFile: configExecFile,
 		ConfigExecPath: configExecPath,
 	}
-}
-
-var OperatorTemplate = `{{ if ne .Namespace "openshift-operators" -}}
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ .Namespace }}
-  labels:
-    openshift.io/cluster-monitoring: "true"
-  annotations:
-    workload.openshift.io/allowed: management
----
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: {{ .Name }}-operatorgroup
-  namespace: {{ .Namespace }}
-spec:
-  targetNamespaces:
-  - {{ .Namespace }}
----
-{{ end -}}
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: {{ .Name }}
-  namespace: {{ .Namespace }}
-spec:
-  channel: "{{ .DefaultChannel }}"
-  name: {{ .Name }}
-  source: {{ .Source }}
-  sourceNamespace: {{ .SourceNS }}
-  startingCSV: {{ .Csv }}
-  installPlanApproval: Automatic
-`
-
-func GetOperatorTemplate() string {
-	return OperatorTemplate
 }

@@ -1,7 +1,6 @@
 package operator
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -26,7 +25,7 @@ func TestConfig(t *testing.T) {
 	}
 	o.enableAsPlugin()
 
-	contentTempPaths, err := ioutil.ReadDir(execPath)
+	contentTempPaths, err := os.ReadDir(execPath)
 	if err != nil {
 		log.Fatalf("Error reading execPath: %s", err)
 	}

@@ -11,8 +11,7 @@ import (
 	"strings"
 )
 
-func (o *Operator) RemoveOperator(remove bool, args []string) error {
-
+func (o *Operator) RemoveOperator(ns string, remove bool, args []string) error {
 	if remove {
 		var confirmation string
 		color.Green("Are you sure? [y/N]:")
@@ -39,6 +38,16 @@ func (o *Operator) RemoveOperator(remove bool, args []string) error {
 		err := o.GetOperator(operator)
 		if err != nil {
 			return err
+		}
+		o.Namespace = ns
+		if ns == "" {
+			if o.SuggestedNamespace == "" {
+				// if not suggested namespace and not namespaces, create one
+				o.Namespace = "openshift-" + strings.Split(operator, "-operator")[0]
+			} else {
+				// by default use the suggested namespace
+				o.Namespace = o.SuggestedNamespace
+			}
 		}
 		d := utils.GetDynamicClient()
 		color.Cyan("Removing subscription %s", operator)
