@@ -3,26 +3,46 @@ package operator
 import (
 	"context"
 	"errors"
-	"html/template"
+	"fmt"
 	"log"
-	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/karmab/tasty/pkg/utils"
-	corev1 "k8s.io/api/core/v1"
+	"gopkg.in/yaml.v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func (o *Operator) InstallOperator(wait, out bool, ns, channel, csv, src, srcNS, installPlan string, args []string) error {
-	for _, operator := range args {
+func (o *Operator) InstallOperator(wait, out bool, targetNSs, ns, channel, csv, src, srcNS, installPlan string, args []string) error {
+	const (
+		nsDelimiter = ","
+		allNSString = "*"
+	)
 
+	// convert comma separated list of target namespaces to a slice of target namespace
+	targetNamespaces := strings.Split(targetNSs, ",")
+
+	// if any namespaces in the list is "*", assume all namespaces install mode. All other namespaces are discarded
+	IsAllNamespacesMode := StringInSlice(targetNamespaces, allNSString)
+
+	for _, operator := range args {
 		err := o.GetOperator(operator)
 		if err != nil {
 			log.Printf("Error getting operator %s: %s", operator, err)
 			return err
+		}
+		o.Namespace = ns
+		if ns == "" {
+			if o.SuggestedNamespace == "" {
+				// if not suggested namespace and not namespaces, create one
+				o.Namespace = "openshift-" + strings.Split(operator, "-operator")[0]
+			} else {
+				// by default use the suggested namespace
+				o.Namespace = o.SuggestedNamespace
+			}
 		}
 
 		if channel != "" {
@@ -36,9 +56,6 @@ func (o *Operator) InstallOperator(wait, out bool, ns, channel, csv, src, srcNS,
 		if csv != "" {
 			o.Csv = csv
 		}
-		if ns == "" {
-			ns = o.Namespace
-		}
 		if installPlan == "" {
 			installPlan = "Automatic"
 		} else if installPlan != "Manual" && installPlan != "Automatic" {
@@ -47,69 +64,83 @@ func (o *Operator) InstallOperator(wait, out bool, ns, channel, csv, src, srcNS,
 		}
 		o.Source = src
 		o.SourceNS = srcNS
-		if out {
-			t := template.New("Template")
-			tpl, err := t.Parse(GetOperatorTemplate())
-			if err != nil {
-				log.Printf("Error parsing template: %s", err)
-				return err
-			}
-			operatordata := Operator{
-				Name:           operator,
-				Source:         o.Source,
-				SourceNS:       o.SourceNS,
-				DefaultChannel: o.DefaultChannel,
-				Csv:            o.Csv,
-				Namespace:      ns,
-			}
-			err = tpl.Execute(os.Stdout, operatordata)
-			if err != nil {
-				log.Printf("Error executing template: %s", err)
-				return err
-			}
-		} else {
+		yamlOutput := ""
+		if !out {
 			color.Cyan("Installing operator %s", operator)
-			dynamic := utils.GetDynamicClient()
-			if ns != "openshift-operators" {
-				color.Cyan("Creating namespace %s", ns)
-				k8sclient := utils.GetK8sClient()
-				namespace := &corev1.Namespace{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: ns,
-						Annotations: map[string]string{
+		}
+		dynamic := utils.GetDynamicClient()
+		if o.Namespace != "openshift-operators" {
+			if !out {
+				color.Cyan("Creating namespace %s", o.Namespace)
+			}
+
+			namespaceGVR := schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "namespaces",
+			}
+
+			namespacespec := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Namespace",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name": o.Namespace,
+						"annotations": map[string]string{
 							"workload.openshift.io/allowed": "management",
 						},
 					},
-				}
+				},
+			}
 
-				_, err := k8sclient.CoreV1().Namespaces().Create(context.TODO(), namespace, metav1.CreateOptions{})
-				if !apierrors.IsAlreadyExists(err) {
-					utils.Check(err)
-				} else {
-					color.Yellow("Namespace %s already exists, continuing...", namespace.Name)
+			if out {
+				yamlOutput += fmt.Sprintf("---\n%s", printObjectYAML(namespacespec.Object))
+			} else {
+				_, err = dynamic.Resource(namespaceGVR).Create(context.TODO(), namespacespec, metav1.CreateOptions{})
+				if err != nil {
+					if !apierrors.IsAlreadyExists(err) {
+						log.Printf("Error creating namespace %s: %s", o.Namespace, err)
+						return err
+					} else {
+						color.Yellow("Namespace %s already exists, continuing...", namespacespec.GetName())
+					}
 				}
+			}
 
+			if !out {
 				color.Cyan("Creating operator group %s-operatorgroup", operator)
-				operatorgroupsGVR := schema.GroupVersionResource{
-					Group:    "operators.coreos.com",
-					Version:  "v1",
-					Resource: "operatorgroups",
-				}
+			}
+			operatorgroupsGVR := schema.GroupVersionResource{
+				Group:    "operators.coreos.com",
+				Version:  "v1",
+				Resource: "operatorgroups",
+			}
 
-				operatorgroupspec := &unstructured.Unstructured{
-					Object: map[string]interface{}{
-						"kind":       "OperatorGroup",
-						"apiVersion": "operators.coreos.com/v1",
-						"metadata": map[string]interface{}{
-							"name":      operator + "-operatorgroup",
-							"namespace": ns,
-						},
-						"spec": map[string]interface{}{
-							"targetNamespaces": []string{ns},
-						},
-					},
+			// If all namespaces install mode is detected, configure an empty spec
+			aSpec := map[string]interface{}{}
+
+			// If one or more target namespaces are passed, use them as target namespaces
+			if !IsAllNamespacesMode {
+				aSpec = map[string]interface{}{
+					"targetNamespaces": targetNamespaces,
 				}
-				_, err = dynamic.Resource(operatorgroupsGVR).Namespace(ns).Create(context.TODO(), operatorgroupspec, metav1.CreateOptions{})
+			}
+
+			operatorgroupspec := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "OperatorGroup",
+					"apiVersion": "operators.coreos.com/v1",
+					"metadata": map[string]interface{}{
+						"name":      operator + "-operatorgroup",
+						"namespace": o.Namespace,
+					},
+					"spec": aSpec,
+				},
+			}
+			if out {
+				yamlOutput += fmt.Sprintf("---\n%s", printObjectYAML(operatorgroupspec.Object))
+			} else {
+				_, err = dynamic.Resource(operatorgroupsGVR).Namespace(o.Namespace).Create(context.TODO(), operatorgroupspec, metav1.CreateOptions{})
 				if err != nil {
 					if !apierrors.IsAlreadyExists(err) {
 						log.Printf("Error creating operator group %s: %s", operator+"-operatorgroup", err)
@@ -120,32 +151,39 @@ func (o *Operator) InstallOperator(wait, out bool, ns, channel, csv, src, srcNS,
 				}
 			}
 
+		}
+		if !out {
 			color.Cyan("Creating subscription %s", operator)
-			subscriptionsGVR := schema.GroupVersionResource{
-				Group:    "operators.coreos.com",
-				Version:  "v1alpha1",
-				Resource: "subscriptions",
-			}
+		}
+		subscriptionsGVR := schema.GroupVersionResource{
+			Group:    "operators.coreos.com",
+			Version:  "v1alpha1",
+			Resource: "subscriptions",
+		}
 
-			subspec := &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       "Subscription",
-					"apiVersion": "operators.coreos.com/v1alpha1",
-					"metadata": map[string]interface{}{
-						"name":      operator,
-						"namespace": ns,
-					},
-					"spec": map[string]interface{}{
-						"channel":             o.DefaultChannel,
-						"name":                operator,
-						"source":              o.Source,
-						"sourceNamespace":     o.SourceNS,
-						"startingCSV":         o.Csv,
-						"installPlanApproval": installPlan,
-					},
+		subspec := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"kind":       "Subscription",
+				"apiVersion": "operators.coreos.com/v1alpha1",
+				"metadata": map[string]interface{}{
+					"name":      operator,
+					"namespace": o.Namespace,
 				},
-			}
-			_, err := dynamic.Resource(subscriptionsGVR).Namespace(ns).Create(context.TODO(), subspec, metav1.CreateOptions{})
+				"spec": map[string]interface{}{
+					"channel":             o.DefaultChannel,
+					"name":                operator,
+					"source":              o.Source,
+					"sourceNamespace":     o.SourceNS,
+					"startingCSV":         o.Csv,
+					"installPlanApproval": installPlan,
+				},
+			},
+		}
+		if out {
+			yamlOutput += fmt.Sprintf("---\n%s", printObjectYAML(subspec.Object))
+			fmt.Print(yamlOutput)
+		} else {
+			_, err = dynamic.Resource(subscriptionsGVR).Namespace(o.Namespace).Create(context.TODO(), subspec, metav1.CreateOptions{})
 			if err != nil {
 				log.Printf("Error creating subscription %s: %s", operator, err)
 				return err
@@ -156,4 +194,24 @@ func (o *Operator) InstallOperator(wait, out bool, ns, channel, csv, src, srcNS,
 		}
 	}
 	return nil
+}
+
+// StringInSlice checks a slice for a given string.
+func StringInSlice(s []string, str string) bool {
+	for _, v := range s {
+		if strings.Contains(strings.TrimSpace(string(v)), string(str)) {
+			return true
+		}
+	}
+	return false
+}
+
+// Prints the yaml for the k8s object
+func printObjectYAML(obj map[string]interface{}) string {
+	yamlData, err := yaml.Marshal(obj)
+	if err != nil {
+		log.Printf("Error marshaling YAML: %s", err)
+		return ""
+	}
+	return string(yamlData)
 }

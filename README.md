@@ -45,6 +45,21 @@ tasty install assisted-service-operator hive-operator --source certified-operato
 tasty install assisted-service-operator --stdout
 ```
 
+- Print yaml of kiali-ossm operator (all-namespaces install mode)
+```bash
+bin/tasty install --source redhat-operators --namespace test-operators --targetns "*" kiali-ossm --stdout
+```
+
+- Print yaml of kiali-ossm operator (multi-namespaces install mode)
+```bash
+bin/tasty install --source redhat-operators --namespace kiali-operator --targetns "ns1,ns2" kiali-ossm --stdout
+```
+
+- Print yaml of kiali-ossm operator (own-namespace install mode)
+```bash
+bin/tasty install --source redhat-operators --namespace kiali-operator --targetns "kiali-operator" kiali-ossm --stdout
+```
+
 ## Requirements
 
 Kubeconfig environment variable must be set

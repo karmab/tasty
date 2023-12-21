@@ -25,7 +25,7 @@ func NewInstaller() *cobra.Command {
 	var (
 		o                *operator.Operator
 		wait, out        bool
-		ns, ch           string
+		ns, targetNS, ch string
 		csv, installPlan string
 		src, srcNS       string
 	)
@@ -37,13 +37,14 @@ func NewInstaller() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
-			return o.InstallOperator(wait, out, ns, ch, csv, src, srcNS, installPlan, args)
+			return o.InstallOperator(wait, out, targetNS, ns, ch, csv, src, srcNS, installPlan, args)
 		},
 	}
 	flags := cmd.Flags()
 	flags.BoolVarP(&wait, "wait", "w", false, "Wait for crd to show up")
 	flags.BoolVarP(&out, "stdout", "s", false, "Print to stdout")
-	flags.StringVarP(&ns, "namespace", "n", "", "Target namespace")
+	flags.StringVarP(&ns, "namespace", "n", "", "Namespace")
+	flags.StringVarP(&targetNS, "targetns", "t", "", "Target namespaces (comma-delimited)")
 	flags.StringVarP(&ch, "channel", "c", "", "Target channel")
 	flags.StringVar(&csv, "csv", "", "Custom csv")
 	flags.StringVar(&src, "source", "community-operators", "CatalogSource to be used")
