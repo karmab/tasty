@@ -26,6 +26,8 @@ func NewRemover() *cobra.Command {
 	var o *operator.Operator
 	var (
 		removed bool
+		rmns    bool
+		rmgroup bool
 		ns      string
 	)
 	cmd := &cobra.Command{
@@ -35,11 +37,13 @@ func NewRemover() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o = operator.NewOperator()
-			return o.RemoveOperator(ns, removed, args)
+			return o.RemoveOperator(ns, removed, rmns, rmgroup, args)
 		},
 	}
 	flags := cmd.Flags()
 	flags.BoolVarP(&removed, "yes", "y", false, "Confirm")
+	flags.BoolVarP(&rmns, "rmns", "r", false, "Remove namespace")
+	flags.BoolVarP(&rmgroup, "rmgroups", "g", false, "Remove all operator groups in namespace")
 	flags.StringVarP(&ns, "namespace", "n", "", "namespace")
 	return cmd
 }

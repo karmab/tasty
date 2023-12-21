@@ -7,11 +7,10 @@ import (
 	"github.com/fatih/color"
 	"github.com/karmab/tasty/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
 )
 
-func (o *Operator) RemoveOperator(ns string, remove bool, args []string) error {
+func (o *Operator) RemoveOperator(ns string, remove, rmns, rmgroup bool, args []string) error {
 	if remove {
 		var confirmation string
 		color.Green("Are you sure? [y/N]:")
@@ -22,16 +21,6 @@ func (o *Operator) RemoveOperator(ns string, remove bool, args []string) error {
 			color.Red("Leaving..")
 			return errors.New("leaving")
 		}
-	}
-	subscriptionsGVR := schema.GroupVersionResource{
-		Group:    "operators.coreos.com",
-		Version:  "v1alpha1",
-		Resource: "subscriptions",
-	}
-	operatorgroupsGVR := schema.GroupVersionResource{
-		Group:    "operators.coreos.com",
-		Version:  "v1",
-		Resource: "operatorgroups",
 	}
 	for _, operator := range args {
 		color.Cyan("Removing operator %s", operator)
@@ -49,24 +38,51 @@ func (o *Operator) RemoveOperator(ns string, remove bool, args []string) error {
 				o.Namespace = o.SuggestedNamespace
 			}
 		}
-		d := utils.GetDynamicClient()
-		color.Cyan("Removing subscription %s", operator)
-		err = d.Resource(subscriptionsGVR).Namespace(o.Namespace).Delete(context.TODO(), operator, metav1.DeleteOptions{})
+
+		olmClient := utils.GetOlmClient()
+		subscriptions, err := olmClient.OperatorsV1alpha1().Subscriptions(ns).List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
+			fmt.Printf("Error listing subscriptions: %v\n", err)
 			return err
 		}
+
+		for _, s := range subscriptions.Items {
+			if s.Spec.Package == operator {
+				err := olmClient.OperatorsV1alpha1().Subscriptions(ns).Delete(context.TODO(), s.Name, metav1.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		if o.Namespace != "openshift-operators" {
-			color.Cyan("Removing operator group %s-operatorgroup", operator)
-			k8sclient := utils.GetK8sClient()
-			err := d.Resource(operatorgroupsGVR).Namespace(o.Namespace).Delete(context.TODO(), operator+"-operatorgroup", metav1.DeleteOptions{})
-			if err != nil {
-				return err
+			color.Cyan("Removing all operator groups")
+
+			if rmgroup {
+				operatorGroups, err := olmClient.OperatorsV1().OperatorGroups(ns).List(context.TODO(), metav1.ListOptions{})
+				if err != nil {
+					fmt.Printf("Error listing OperatorGroups: %v\n", err)
+					return err
+				}
+
+				fmt.Println("Deleting OperatorGroups:")
+				for _, operatorGroup := range operatorGroups.Items {
+					color.Cyan("Removing %s", operatorGroup.GetName())
+					err := olmClient.OperatorsV1().OperatorGroups(ns).Delete(context.TODO(), operatorGroup.GetName(), metav1.DeleteOptions{})
+					if err != nil {
+						return err
+					}
+				}
 			}
-			color.Cyan("Removing namespace group %s", o.Namespace)
-			err = k8sclient.CoreV1().Namespaces().Delete(context.TODO(), o.Namespace, metav1.DeleteOptions{})
-			if err != nil {
-				return err
+			if rmns {
+				color.Cyan("Removing namespace group %s", o.Namespace)
+				k8sclient := utils.GetK8sClient()
+				err = k8sclient.CoreV1().Namespaces().Delete(context.TODO(), o.Namespace, metav1.DeleteOptions{})
+				if err != nil {
+					return err
+				}
 			}
+
 		}
 	}
 	return nil
